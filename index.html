@@ -1240,7 +1240,7 @@ function runExtendRequests(){
       empShiftMap[empId]={shiftId:String(row[sIdCol]||'').trim(),spId:String(row[sSPCol]||'').trim(),startDate,endDate,startT,endT,absEnd,startTStr:toHHMM2(startT),endTStr:toHHMM2(endT)};
     }
   }
-  const timeCol=4,idCol=5,statusCol=7;
+  const timeCol=4,idCol=6,statusCol=8;
   const tbody=document.getElementById('req-tbody');tbody.innerHTML='';
   reqOutputRows=[];_skippedRows=[];_filteredRows=[];
   const skippedRows=_skippedRows,filteredRows=_filteredRows;
@@ -1250,7 +1250,8 @@ function runExtendRequests(){
     if(statusCol>=0){
       const status=String(row[statusCol]||'').trim();
       const normStatus=status.replace(/[إأآا]/g,'ا');
-      if(status&&normStatus!=='قيد الانتظار'){filteredOut++;filteredRows.push({riderId:String(row[idCol]||'').trim(),timeRaw:String(row[timeCol]||'').trim(),status});continue;}
+      const isPending=normStatus==='قيد الانتظار'||normStatus===''||!status;
+      if(!isPending){filteredOut++;filteredRows.push({riderId:String(row[idCol]||'').trim(),timeRaw:String(row[timeCol]||'').trim(),status});continue;}
     }
     const timeRaw=String(row[timeCol]||'').trim();const riderId=String(row[idCol]||'').trim();if(!riderId)continue;
     const newEndTime=parseArabicTime(timeRaw);
