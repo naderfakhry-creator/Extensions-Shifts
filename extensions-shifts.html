@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extensions Shifts</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f7f7f5;--surface:#fff;--border:#e5e5e3;--border-strong:#d0d0cd;
+  --text-primary:#1a1a18;--text-secondary:#6b6b68;--text-muted:#a0a09d;
+  --accent:#f05c23;--accent-bg:#fff1ec;--accent-border:#ffb49a;--accent-text:#c0390a;
+  --success-bg:#edf7ed;--success-text:#2d7a2d;
+  --warn-bg:#fff8e6;--warn-text:#b07800;
+  --danger-bg:#fef0f0;--danger-text:#c0392b;
+  --radius:8px;
+}
+[data-theme="dark"]{
+  --bg:#181816;--surface:#232321;--border:#2e2e2b;--border-strong:#3d3d3a;
+  --text-primary:#f0f0ec;--text-secondary:#a0a09d;--text-muted:#6b6b68;
+  --accent:#ff7043;--accent-bg:#2a1508;--accent-border:#6a2010;--accent-text:#ff8060;
+  --success-bg:#152215;--success-text:#5ab85a;
+  --warn-bg:#221a08;--warn-text:#f0b429;
+  --danger-bg:#1e1010;--danger-text:#e07070;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 12px;color:var(--text-secondary);font-size:12px;cursor:pointer}
+.main{max-width:1060px;margin:0 auto;padding:2rem 1.5rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.section-label{font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.drop-zone{border:1.5px dashed var(--border-strong);border-radius:12px;padding:2rem 1rem;text-align:center;cursor:pointer;color:var(--text-secondary);font-size:14px;margin-bottom:1.25rem;transition:all .2s}
+.drop-zone:hover,.drop-zone.hover{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-text)}
+.drop-zone.loaded{border-color:#4caf50;background:var(--success-bg);color:var(--success-text)}
+.drop-icon{font-size:26px;margin-bottom:8px;display:block}
+#file-input{display:none}
+.dropdown-wrap{position:relative;margin-bottom:1rem}
+.dd-trigger{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:13px;color:var(--text-primary);user-select:none}
+.dd-trigger:hover{border-color:var(--accent)}
+.dd-arrow{font-size:10px;color:var(--text-muted);transition:transform .2s}
+.dd-trigger.open .dd-arrow{transform:rotate(180deg)}
+.dd-menu{position:absolute;top:calc(100% + 4px);right:0;left:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius);z-index:200;max-height:260px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.1);display:none}
+.dd-menu.open{display:block}
+.dd-search{padding:8px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.dd-search input{width:100%;border:none;background:transparent;outline:none;font-size:13px;color:var(--text-primary)}
+.dd-actions{display:flex;border-bottom:1px solid var(--border);position:sticky;top:41px;background:var(--surface)}
+.dd-act-btn{flex:1;padding:6px;font-size:12px;border:none;background:none;cursor:pointer;color:var(--text-secondary)}
+.dd-act-btn:hover{background:var(--bg);color:var(--accent-text)}
+.dd-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:13px}
+.dd-item:hover{background:var(--bg)}
+.dd-item.checked{color:var(--accent-text)}
+.dd-check{width:15px;height:15px;border:1.5px solid var(--border-strong);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:#fff}
+.dd-item.checked .dd-check{background:var(--accent);border-color:var(--accent)}
+.tags-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem;min-height:4px}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:20px;font-size:12px;color:var(--accent-text)}
+.tag-x{cursor:pointer;font-size:13px;opacity:.7;line-height:1}
+.tag-x:hover{opacity:1}
+.cond-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
+.cond-row{display:grid;grid-template-columns:1fr auto auto auto auto auto auto;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px}
+.cond-sp-label{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.cond-sp-sub{font-size:11px;color:var(--text-secondary);display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clabel{font-size:12px;color:var(--text-secondary);white-space:nowrap}
+.cinput{padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text-primary);font-size:13px;width:64px;outline:none;text-align:center}
+.cinput:focus{border-color:var(--accent)}
+.cselect{padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text-primary);font-size:12px;outline:none;cursor:pointer}
+.cond-sp-avg{font-size:11px;color:var(--success-text);display:block;margin-top:3px;font-weight:500}
+.cx{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 2px;line-height:1}
+.cx:hover{color:var(--danger-text)}
+.add-grp-btn{width:100%;padding:7px;border:1px dashed var(--border-strong);border-radius:var(--radius);background:transparent;color:var(--text-secondary);font-size:13px;cursor:pointer;margin-bottom:1rem;text-align:center}
+.add-grp-btn:hover{border-color:var(--accent);color:var(--accent-text)}
+.no-sp-msg{text-align:center;padding:1.5rem;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius)}
+.run-btn{width:100%;padding:10px;background:var(--accent);border:none;border-radius:var(--radius);color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+.run-btn:hover{opacity:.88}
+.err{color:var(--danger-text);background:var(--danger-bg);border-radius:var(--radius);padding:8px 12px;font-size:13px;margin-top:10px;display:none}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
+.stat-card{background:var(--bg);border-radius:var(--radius);padding:12px 14px}
+.stat-lbl{font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.stat-val{font-size:22px;font-weight:600}
+.stat-sub{font-size:11px;color:var(--text-secondary);margin-top:2px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.tab{padding:8px 16px;font-size:13px;font-weight:500;color:var(--text-secondary);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--accent-text);border-bottom-color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.res-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.badge{font-size:12px;padding:3px 10px;border-radius:20px;font-weight:500}
+.badge-a{background:var(--accent-bg);color:var(--accent-text)}
+.badge-s{background:var(--success-bg);color:var(--success-text)}
+.exp-btn{padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text-secondary);font-size:13px;cursor:pointer;font-weight:500}
+.exp-btn:hover{border-color:var(--accent);color:var(--accent-text)}
+.exp-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.exp-btn.primary:hover{opacity:.88}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em;background:var(--bg)}
+tbody td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text-primary);white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--bg)}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.pw{background:var(--warn-bg);color:var(--warn-text)}
+.pi{background:var(--accent-bg);color:var(--accent-text)}
+.ps{background:var(--success-bg);color:var(--success-text)}
+.hnew{color:var(--accent-text);font-weight:600}
+.empty-r td{text-align:center;padding:2.5rem;color:var(--text-muted);font-size:13px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay[hidden]{display:none}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;padding:4px}
+.modal-close:hover{color:var(--text-primary)}
+.modal-body{padding:1.25rem 1.5rem}
+.rpt-section{margin-bottom:1.5rem}
+.rpt-section-title{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.rpt-stat-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.rpt-stat-row:last-child{border-bottom:none}
+.rpt-stat-key{color:var(--text-secondary);flex:1}
+.rpt-stat-val{font-weight:600;color:var(--text-primary);text-align:left;direction:ltr}
+.rpt-sp-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:var(--radius);margin-bottom:4px;background:var(--bg);font-size:13px}
+.rpt-sp-name{flex:1;font-weight:500}
+.rpt-sp-hours{color:var(--accent-text);font-weight:700;font-size:13px;direction:ltr}
+.rpt-empty{text-align:center;padding:1rem;color:var(--text-muted);font-size:13px}
+.rpt-export-btn{width:100%;padding:9px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-secondary);font-size:13px;cursor:pointer;margin-top:10px;font-weight:500}
+.rpt-export-btn:hover{border-color:var(--accent);color:var(--accent-text)}
+.steps{display:flex;align-items:center;gap:0;margin-bottom:1.5rem;padding:1rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow-x:auto}
+.step{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.step-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all .3s;border:2px solid var(--border-strong);color:var(--text-muted);background:var(--bg)}
+.step-label{font-size:12px;color:var(--text-muted);white-space:nowrap;transition:color .3s}
+.step-line{flex:1;height:1px;background:var(--border);margin:0 8px;min-width:20px;transition:background .3s}
+.step.active .step-circle{background:var(--accent);border-color:var(--accent);color:#fff}
+.step.active .step-label{color:var(--accent-text);font-weight:600}
+.step.done .step-circle{background:var(--success-bg);border-color:var(--success-text);color:var(--success-text)}
+.step.done .step-label{color:var(--success-text)}
+.step.done+.step-line,.step.active+.step-line{background:var(--accent)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div>Extensions Shifts</div>
+  <div style="display:flex;gap:4px">
+    <button class="theme-btn" id="nav-analyzer" onclick="showSection('analyzer')" style="background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent-border)">📊 Bulk Action</button>
+    <button class="theme-btn" id="nav-creator" onclick="showSection('creator')">➕ Shift Creator</button>
+    <button class="theme-btn" id="nav-requests" onclick="showSection('requests')">📬 Extend Requests</button>
+    <button class="theme-btn" id="nav-ending" onclick="showSection('ending')">⏹ Ending Riders</button>
+    <button class="theme-btn" id="nav-report" onclick="showSection('report')">📋 Report</button>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
+</div>
+<div class="main">
+<div id="section-analyzer">
+  <div class="steps" id="progress-steps">
+    <div class="step active" id="step-1"><div class="step-circle">1</div><span class="step-label">ارفع الملف</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step-2"><div class="step-circle">2</div><span class="step-label">اختار التاريخ</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step-3"><div class="step-circle">3</div><span class="step-label">حدد الـ Conditions</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step-4"><div class="step-circle">4</div><span class="step-label">حمّل الملف</span></div>
+  </div>
+  <div class="drop-zone" id="dz" onclick="document.getElementById('file-input').click()">
+    <span class="drop-icon">📂</span>
+    اسحب ملف CSV أو Excel هنا، أو اضغط للاختيار
+    <div id="fname" style="font-size:12px;margin-top:6px;color:var(--text-muted)"></div>
+  </div>
+  <input type="file" id="file-input" accept=".csv,.xlsx,.xls">
+  <div class="card" id="date-card" style="display:none">
+    <div class="section-label">تاريخ الشيفتات</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <input type="date" id="date-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:14px;outline:none;cursor:pointer">
+      <span style="font-size:12px;color:var(--text-secondary)" id="date-count"></span>
+    </div>
+  </div>
+  <div class="card" id="cond-card" style="display:none">
+    <div class="section-label">Conditions</div>
+    <div id="strategy-info" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem;position:relative">
+      <button onclick="document.getElementById('strategy-info').style.display='none'" style="position:absolute;top:8px;left:12px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px">✕</button>
+      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">كيف تختار الـ Strategy؟</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:16px;flex-shrink:0">⏩</span><div><span style="font-size:12px;font-weight:600;color:var(--text-primary)">Extend</span><span style="font-size:12px;color:var(--text-secondary)"> — يمد آخر شيفت بالساعات الناقصة. الأبسط لو المندوب عنده شيفت واحد أو عايز تضيف في آخر اليوم.</span></div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:16px;flex-shrink:0">🔀</span><div><span style="font-size:12px;font-weight:600;color:var(--text-primary)">Fill gaps</span><span style="font-size:12px;color:var(--text-secondary)"> — يملي الفراغات بين الشيفتات الموجودة بدل ما يمد في الآخر. أحسن لو في وقت فاضي بين الشيفتات.</span></div></div>
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:16px;flex-shrink:0">⚡</span><div><span style="font-size:12px;font-weight:600;color:var(--text-primary)">Hybrid</span><span style="font-size:12px;color:var(--text-secondary)"> — يملي الفراغات الأول، لو لسه ناقص يمد آخر شيفت. الافضل للبارت تايم</span></div></div>
+      </div>
+    </div>
+    <div class="cond-list" id="cond-list"></div>
+    <button class="add-grp-btn" id="add-grp-btn" style="display:none" onclick="addGroup()">+ إضافة group جديد</button>
+    <div style="display:flex;gap:8px;margin-bottom:10px;display:none" id="save-btns">
+      <button class="exp-btn" onclick="saveGroups()" style="flex:1">💾 حفظ الإعدادات</button>
+      <button class="exp-btn" onclick="clearSavedGroups()" style="color:var(--danger-text)">🗑 مسح المحفوظ</button>
+    </div>
+    <button class="run-btn" onclick="runAnalysis()">▶ تحليل</button>
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:8px;text-align:center" id="time-display"></div>
+    <div class="err" id="err"></div>
+  </div>
+  <div id="results-sec" style="display:none">
+    <div class="summary-grid" id="summary-grid"></div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('a')">📊 التحليل</button>
+        <button class="tab" onclick="switchTab('u')">📋 ملف الرفع</button>
+      </div>
+      <div class="tab-panel active" id="tab-a">
+        <div class="res-header">
+          <span style="font-size:15px;font-weight:600">المناديب اللي محتاجين زيادة</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge badge-a" id="cnt-a"></span>
+            <button class="exp-btn" onclick="exportAnalysis()">⬇ Export</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table dir="ltr"><thead><tr>
+            <th>employee name</th><th>employee id</th><th>shift id</th>
+            <th>starting point</th><th>إجمالي</th><th>target</th>
+            <th>ناقص</th><th>start</th><th>end قديم</th><th>end جديد</th>
+          </tr></thead><tbody id="tbody-a"></tbody></table>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-u">
+        <div class="res-header">
+          <span style="font-size:15px;font-weight:600">ملف الرفع</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge badge-s" id="cnt-u"></span>
+            <button class="exp-btn" onclick="toggleAllRows()" id="toggle-all-btn">إلغاء تحديد الكل</button>
+            <button class="exp-btn primary" onclick="exportUpload()">⬇ تحميل Excel</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px" id="selected-count"></div>
+        <div class="table-wrap">
+          <table dir="ltr"><thead><tr>
+            <th style="width:36px"><input type="checkbox" id="check-all" checked onchange="toggleAllCheckboxes(this.checked)"></th>
+            <th>shift_id</th><th>adjustment_type</th><th>employee_id</th>
+            <th>starting_point_id</th><th>start_date</th><th>end_date</th>
+            <th>start_time (local)</th><th>end_time (local)</th><th>shift_slots</th>
+          </tr></thead><tbody id="tbody-u"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHIFT CREATOR -->
+<div id="section-creator" style="display:none">
+  <div class="card" style="background:var(--warn-bg);border-color:var(--warn-text)">
+    <div style="font-size:13px;color:var(--warn-text)">⚠️ عشان أسماء النقط تظهر، ارفع ملف الشيفتات في تاب <b>Bulk Action</b> الأول — لو مش عاوز ترفع ملف، اكتب الـ SP ID يدوياً.</div>
+  </div>
+  <div class="card">
+    <div class="section-label">Shift Creator — إنشاء شيفتات جديدة</div>
+    <div id="sc-groups-list"></div>
+    <button class="add-grp-btn" onclick="addScGroup()" style="margin-bottom:8px">+ إضافة group جديد</button>
+    <div style="display:flex;gap:8px;margin-bottom:1rem">
+      <button class="exp-btn" onclick="saveScGroups()" style="flex:1">💾 حفظ الإعدادات</button>
+      <button class="exp-btn" onclick="clearScGroups()" style="color:var(--danger-text)">🗑 مسح المحفوظ</button>
+    </div>
+    <button class="run-btn" onclick="generateShifts()">▶ توليد الشيفتات</button>
+    <div class="err" id="sc-err" style="margin-top:10px;display:none"></div>
+  </div>
+  <div class="card" id="sc-results" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <span style="font-size:15px;font-weight:600">الشيفتات الجديدة</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge badge-s" id="sc-count"></span>
+        <button class="exp-btn primary" onclick="exportCreator()">⬇ تحميل CSV</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="sc-breakdown"></div>
+    <div style="overflow-x:auto"><table dir="ltr" style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">shift_id</th>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">adjustment_type</th>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">employee_id</th>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">starting_point_id</th>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">start_date</th>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">end_date</th>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">start_time (local)</th>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">end_time (local)</th>
+      <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">shift_slots</th>
+    </tr></thead><tbody id="sc-tbody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- EXTEND REQUESTS -->
+<div id="section-requests" style="display:none">
+  <div class="card">
+    <div class="section-label">Extend Requests — تزويد بناءً على ريكويستات</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+      <div>
+        <label style="font-size:12px;color:var(--text-secondary);font-weight:500;display:block;margin-bottom:6px">📋 ملف الشيفتات (Rooster-Review)</label>
+        <div class="drop-zone" id="dz-req-shifts" onclick="document.getElementById('fi-req-shifts').click()" style="padding:1rem;font-size:13px">
+          <span id="dz-req-shifts-icon" class="drop-icon" style="font-size:20px;margin-bottom:4px">📂</span>
+          اسحب ملف الشيفتات هنا
+          <div id="dz-req-shifts-name" style="font-size:11px;margin-top:4px;color:var(--text-muted)"></div>
+        </div>
+        <input type="file" id="fi-req-shifts" accept=".csv,.xlsx,.xls" style="display:none">
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-secondary);font-weight:500;display:block;margin-bottom:6px">📬 ملف الريكويستات (فيه Rider ID والوقت المطلوب)</label>
+        <div class="drop-zone" id="dz-req-requests" onclick="document.getElementById('fi-req-requests').click()" style="padding:1rem;font-size:13px">
+          <span id="dz-req-requests-icon" class="drop-icon" style="font-size:20px;margin-bottom:4px">📂</span>
+          اسحب ملف الريكويستات هنا
+          <div id="dz-req-requests-name" style="font-size:11px;margin-top:4px;color:var(--text-muted)"></div>
+        </div>
+        <input type="file" id="fi-req-requests" accept=".csv,.xlsx,.xls" style="display:none">
+      </div>
+    </div>
+    <button class="run-btn" onclick="runExtendRequests()">▶ توليد ملف التزويد</button>
+    <div class="err" id="req-err" style="margin-top:10px;display:none"></div>
+  </div>
+  <div class="card" id="req-results" style="display:none">
+    <div class="tabs">
+      <button class="tab active" onclick="switchReqTab('output',this)">📋 ملف التزويد <span class="badge badge-s" id="req-count" style="margin-right:6px"></span></button>
+      <button class="tab" onclick="switchReqTab('skipped',this)">⚠️ تم تجاهله <span class="badge" id="req-skip-count" style="background:var(--warn-bg);color:var(--warn-text);margin-right:6px"></span></button>
+      <button class="tab" onclick="switchReqTab('filtered',this)">✅ منجز مسبقاً <span class="badge" id="req-filtered-count" style="background:var(--success-bg);color:var(--success-text);margin-right:6px"></span></button>
+    </div>
+    <div id="req-tab-output" class="tab-panel active">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="exp-btn primary" onclick="exportRequests()">⬇ تحميل CSV</button></div>
+      <div style="overflow-x:auto"><table dir="ltr" style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">shift_id</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">adjustment_type</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">employee_id</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">starting_point_id</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">start_date</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">end_date</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">start_time (local)</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">end_time (local)</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">shift_slots</th>
+      </tr></thead><tbody id="req-tbody"></tbody></table></div>
+    </div>
+    <div id="req-tab-skipped" class="tab-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;color:var(--text-secondary)">الريكويستات دي اتتجاهلت — إما مفيش شيفت نشط للـ Rider أو الوقت مش واضح</div>
+        <button class="exp-btn" onclick="exportSkipped()">⬇ تحميل CSV</button>
+      </div>
+      <div style="overflow-x:auto"><table dir="ltr" style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">rider_id</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">الوقت المطلوب</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">سبب التجاهل</th>
+      </tr></thead><tbody id="req-skipped-tbody"></tbody></table></div>
+    </div>
+    <div id="req-tab-filtered" class="tab-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;color:var(--text-secondary)">الريكويستات دي حالتها مش "قيد الإنتظار" — يعني اتعمل بيها حاجة مسبقاً</div>
+        <button class="exp-btn" onclick="exportFiltered()">⬇ تحميل CSV</button>
+      </div>
+      <div style="overflow-x:auto"><table dir="ltr" style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">rider_id</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">الوقت المطلوب</th>
+        <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg)">الحالة</th>
+      </tr></thead><tbody id="req-filtered-tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- USERNAME MODAL -->
+<div id="username-modal" class="modal-overlay" style="display:none;backdrop-filter:blur(5px)">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title">👤 اسمك إيه؟</div></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem">لازم تكتب اسمك عشان تقدر تستخدم الأداة. هيتحفظ تلقائي ومش هيطلبه منك تاني.</p>
+      <input type="text" id="username-input" placeholder="مثال: Ahmed"
+        style="width:100%;padding:10px 14px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:14px;outline:none;margin-bottom:1rem"
+        onkeydown="if(event.key==='Enter')saveUsername()">
+      <button class="run-btn" onclick="saveUsername()">حفظ ومتابعة</button>
+    </div>
+  </div>
+</div>
+
+<!-- SESSION REPORT MODAL -->
+<div id="session-report-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeSessionReport()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">📊 Session Report</div>
+      <button class="modal-close" onclick="closeSessionReport()">✕</button>
+    </div>
+    <div class="modal-body" id="session-report-body"></div>
+  </div>
+</div>
+
+<!-- ENDING RIDERS -->
+<div id="section-ending" style="display:none">
+  <div class="card">
+    <div class="section-label">1 — ارفع ملف الشيفتات</div>
+    <div class="drop-zone" id="ee-drop" onclick="document.getElementById('ee-file-input').click()"
+      ondragover="event.preventDefault();this.classList.add('hover')"
+      ondragleave="this.classList.remove('hover')"
+      ondrop="event.preventDefault();this.classList.remove('hover');eeLoadFile(event.dataTransfer.files[0])">
+      <span class="drop-icon">📂</span>
+      <span id="ee-drop-label">اسحب ملف CSV أو Excel هنا، أو اضغط للاختيار</span>
+    </div>
+    <input type="file" id="ee-file-input" accept=".csv,.xlsx,.xls" style="position:absolute;opacity:0;pointer-events:none" onchange="eeLoadFile(this.files[0])">
+  </div>
+  <div class="card" id="ee-settings" style="display:none">
+    <div class="section-label">2 — الإعدادات</div>
+    <div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:flex-start">
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">النقاط</div>
+        <div style="position:relative" id="ee-sp-wrapper">
+          <div id="ee-sp-trigger" onclick="eeToggleSPDrop()"
+            style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);cursor:pointer;font-size:13px;min-width:200px">
+            <span id="ee-sp-label">اختار النقاط</span><span style="color:var(--text-muted)">▾</span>
+          </div>
+          <div id="ee-sp-drop" onclick="event.stopPropagation()" style="display:none;position:absolute;top:100%;right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;min-width:220px;margin-top:4px">
+            <div style="padding:8px"><input type="text" id="ee-sp-search" placeholder="🔍 بحث..." oninput="eeFilterSPs()" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:13px;outline:none"></div>
+            <div style="padding:4px 8px;display:flex;gap:8px">
+              <button onclick="eeSelectAllSPs(true)" style="font-size:11px;background:none;border:none;color:var(--accent-text);cursor:pointer">تحديد الكل</button>
+              <button onclick="eeSelectAllSPs(false)" style="font-size:11px;background:none;border:none;color:var(--text-muted);cursor:pointer">إلغاء الكل</button>
+            </div>
+            <div id="ee-sp-options" style="max-height:200px;overflow-y:auto;padding:4px 0"></div>
+          </div>
+        </div>
+        <div id="ee-sp-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">نافذة وقت الإنهاء</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="text" id="ee-from" value="11:00" placeholder="مثال: 23:30" maxlength="5" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:14px;outline:none;width:90px;text-align:center;direction:ltr">
+          <span style="color:var(--text-muted);font-size:13px">لـ</span>
+          <input type="text" id="ee-to" value="11:30" placeholder="مثال: 23:30" maxlength="5" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:14px;outline:none;width:90px;text-align:center;direction:ltr">
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">فورمات 24 ساعة — مثال: 09:00 أو 23:30</div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">مدة الزيادة</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="ee-hours" min="0" max="12" value="0" style="width:80px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:14px;outline:none;text-align:center">
+          <span style="color:var(--text-muted);font-size:13px">ساعة</span>
+          <input type="number" id="ee-mins" min="0" max="59" step="15" value="30" style="width:80px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:14px;outline:none;text-align:center">
+          <span style="color:var(--text-muted);font-size:13px">دقيقة</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">حد الساعات</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="ee-max-dur" min="0" max="24" step="0.5" placeholder="—" style="width:80px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:14px;outline:none;text-align:center">
+          <span style="color:var(--text-muted);font-size:13px">ساعة</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">من شغل كده أو أكتر ميطلعش</div>
+      </div>
+    </div>
+    <div id="ee-err" style="display:none;color:var(--danger-text);font-size:13px;margin-top:12px;padding:8px 12px;background:var(--danger-bg);border-radius:var(--radius)"></div>
+    <button class="run-btn" onclick="eeRun()" style="margin-top:16px">▶ توليد</button>
+  </div>
+  <div id="ee-results" style="display:none">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div><span style="font-size:14px;font-weight:600">النتيجة</span><span class="badge badge-a" id="ee-count-badge" style="margin-right:8px"></span></div>
+        <button class="exp-btn" onclick="eeExport()">⬇ تحميل CSV</button>
+      </div>
+      <div style="overflow-x:auto"><table dir="ltr" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--bg)">
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">SHIFT_ID</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">ADJUSTMENT_TYPE</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">EMPLOYEE_ID</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">STARTING_POINT_ID</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">START_DATE</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">END_DATE</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">START_TIME (LOCAL)</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">END_TIME (LOCAL)</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">SHIFT_SLOTS</th>
+      </tr></thead><tbody id="ee-tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT -->
+<div id="section-report" style="display:none">
+  <div class="card" style="padding:1rem 1.25rem">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">من</label>
+        <input type="date" id="rpt-from" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:13px;outline:none">
+        <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap">لـ</label>
+        <input type="date" id="rpt-to" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:13px;outline:none">
+      </div>
+      <select id="rpt-user-filter" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:13px;outline:none"><option value="">كل المستخدمين</option></select>
+      <button class="exp-btn" onclick="loadReport()">🔄 تحديث</button>
+      <span id="rpt-status" style="font-size:12px;color:var(--text-muted)"></span>
+    </div>
+  </div>
+  <div id="rpt-loading" style="display:none;text-align:center;padding:3rem;color:var(--text-muted);font-size:13px">⏳ جاري التحميل...</div>
+  <div id="rpt-empty"   style="display:none;text-align:center;padding:3rem;color:var(--text-muted);font-size:13px">مفيش بيانات لحد دلوقتي</div>
+  <div id="rpt-error"   style="display:none;text-align:center;padding:3rem;color:var(--danger-text);font-size:13px"></div>
+  <div id="rpt-content" style="display:none">
+    <div class="summary-grid" id="rpt-summary"></div>
+    <div class="card">
+      <div class="tabs" id="rpt-tabs">
+        <button class="tab active" onclick="switchRptTab('bulk',this)">⏩ Bulk Action</button>
+        <button class="tab" onclick="switchRptTab('extend',this)">📬 Extend Requests</button>
+        <button class="tab" onclick="switchRptTab('creator',this)">➕ Shift Creator</button>
+      </div>
+      <div id="rpt-panel-bulk" class="tab-panel active">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">متوسط ساعات المناديب قبل وبعد الزيادة لكل نقطة</div>
+        <div id="rpt-bulk-content"></div>
+      </div>
+      <div id="rpt-panel-extend" class="tab-panel">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">ساعات الزيادة من Extend Requests لكل نقطة</div>
+        <div id="rpt-extend-content"></div>
+      </div>
+      <div id="rpt-panel-creator" class="tab-panel">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">الشيفتات الجديدة اللي اتولدت لكل نقطة</div>
+        <div id="rpt-creator-content"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:13px;font-weight:600">سجل كل العمليات</span>
+        <span class="badge badge-a" id="rpt-log-count"></span>
+      </div>
+      <div style="overflow-x:auto"><table dir="ltr" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--bg)">
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">Timestamp</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">User</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">Tab</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">SP</th>
+        <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)">Details</th>
+      </tr></thead><tbody id="rpt-log-tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+let rows=[], allSPs=[], selSPs=new Set(), groups=[], results=[], uploads=[], dark=false;
+
+function toggleTheme(){
+  dark=!dark;
+  document.documentElement.setAttribute('data-theme',dark?'dark':'');
+  document.querySelector('.theme-btn[onclick="toggleTheme()"]').textContent=dark?'☀ Light':'🌙 Dark';
+}
+function switchTab(t){
+  const sec=document.getElementById('results-sec');
+  if(!sec)return;
+  sec.querySelectorAll('.tabs .tab').forEach(b=>b.classList.remove('active'));
+  sec.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const targetBtn=sec.querySelector('.tabs .tab[onclick*="\''+t+'\'"]');
+  if(targetBtn) targetBtn.classList.add('active');
+  const targetPanel=sec.querySelector('#tab-'+t);
+  if(targetPanel) targetPanel.classList.add('active');
+}
+function showErr(m){const e=document.getElementById('err');e.textContent=m;e.style.display=m?'block':'none'}
+
+const dz=document.getElementById('dz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('hover')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('hover'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('hover');loadFile(e.dataTransfer.files[0])});
+document.getElementById('file-input').addEventListener('change',e=>loadFile(e.target.files[0]));
+
+function loadFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      dz.classList.add('loaded');
+      dz.querySelector('.drop-icon').textContent='✅';
+      document.getElementById('fname').textContent=file.name+' — '+rows.length+' صف';
+      showErr('');
+      const today=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Cairo'}));
+      const todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+      document.getElementById('date-filter').value=todayStr;
+      document.getElementById('date-card').style.display='block';
+      updateSteps(2);
+      document.getElementById('date-filter').addEventListener('change',()=>{updateDateCount();initSPs();});
+      updateDateCount();
+      initSPs();
+    }catch(e){showErr('تعذر قراءة الملف.');}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function getFilteredRows(){
+  const d=document.getElementById('date-filter').value;
+  if(!d) return rows;
+  const cols=Object.keys(rows[0]||{});
+  const norm=s=>s.toLowerCase().replace(/[\s_\-()]/g,'');
+  const sDCol=cols.find(c=>norm(c).includes('startdate'));
+  if(!sDCol) return rows;
+  return rows.filter(r=>fmtDate(r[sDCol])===d);
+}
+function updateDateCount(){
+  const filtered=getFilteredRows();
+  const d=document.getElementById('date-filter').value;
+  document.getElementById('date-count').textContent=d?filtered.length+' صف بتاريخ '+d:'';
+}
+function findCol(cols,exact){
+  const norm=s=>s.toLowerCase().replace(/[\s_\-()]/g,'');
+  return cols.find(c=>norm(c)===exact)||cols.find(c=>norm(c).includes(exact));
+}
+function getSPCols(cols){
+  const spId=cols.find(c=>/starting.?point.?id/i.test(c));
+  const spName=cols.find(c=>/starting.?point/i.test(c)&&c!==spId);
+  return {spId,spName};
+}
+
+let _spNameCol=null,_spIdCol=null;
+function initSPs(){
+  if(!rows.length)return;
+  const filtered=getFilteredRows();
+  const cols=Object.keys(filtered[0]||rows[0]);
+  const {spId,spName}=getSPCols(cols);
+  if(!spName&&!spId){showErr('مش لاقي عمود starting point.');return;}
+  _spNameCol=spName||null;_spIdCol=spId||null;
+  const nameCol=spName||spId,idCol=spId||spName;
+  const map={};
+  filtered.forEach(r=>{
+    const n=String(r[nameCol]||'').trim();
+    const id=String(r[idCol]||'').trim();
+    if(n) map[n]=id;
+  });
+  allSPs=Object.keys(map).sort();
+  window._spNameToId=map;
+  selSPs=new Set(allSPs);
+  document.getElementById('cond-card').style.display='block';
+  refreshCreatorSPs();
+  updateSteps(3);
+  document.getElementById('add-grp-btn').style.display='block';
+  document.getElementById('save-btns').style.display='flex';
+  if(!loadSavedGroups()){groups=[{sps:new Set(),target:8,strategy:'extend',cutoff:''}];}
+  renderGroups();
+}
+
+function toggleDD(){
+  const m=document.getElementById('dd-menu');
+  const t=document.getElementById('dd-trigger');
+  if(!m||!t)return;
+  const open=m.classList.toggle('open');
+  t.classList.toggle('open',open);
+  if(open){const q=document.getElementById('dd-q');if(q)q.focus();}
+}
+function filterGrpDD(idx){
+  const q=document.getElementById('grp-q-'+idx).value.toLowerCase();
+  const container=document.getElementById('grp-items-'+idx);
+  if(!container)return;
+  container.querySelectorAll('.dd-item').forEach(item=>{
+    const txt=item.textContent.toLowerCase();
+    item.style.display=txt.includes(q)?'':'none';
+  });
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.dropdown-wrap')){
+    document.getElementById('dd-menu')?.classList.remove('open');
+    document.getElementById('dd-trigger')?.classList.remove('open');
+  }
+});
+
+function toggleSP(sp){selSPs.has(sp)?selSPs.delete(sp):selSPs.add(sp);renderDDItems();renderTags();updateDDLbl();syncGroupSPs();}
+function selectAll(){allSPs.forEach(s=>selSPs.add(s));renderDDItems();renderTags();updateDDLbl();syncGroupSPs()}
+function clearAll(){selSPs.clear();renderDDItems();renderTags();updateDDLbl();syncGroupSPs()}
+function updateDDLbl(){
+  const n=selSPs.size;
+  document.getElementById('dd-lbl').textContent=n===0?'اختار النقط...':n===allSPs.length?'كل النقط ('+n+')':n+' نقطة محددة';
+}
+function renderTags(){
+  const w=document.getElementById('tags-wrap');
+  w.innerHTML='';
+  [...selSPs].sort().forEach(sp=>{
+    const t=document.createElement('div');t.className='tag';
+    const safe=sp.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    t.innerHTML=sp+`<span class="tag-x" onclick="toggleSP('${safe}')">✕</span>`;
+    w.appendChild(t);
+  });
+}
+function renderDDItems(){
+  const q=document.getElementById('dd-q')?.value.toLowerCase()||'';
+  const c=document.getElementById('dd-items');
+  if(!c)return;
+  c.innerHTML='';
+  allSPs.filter(s=>s.toLowerCase().includes(q)).forEach(sp=>{
+    const d=document.createElement('div');
+    d.className='dd-item'+(selSPs.has(sp)?' checked':'');
+    d.innerHTML=`<div class="dd-check">${selSPs.has(sp)?'✓':''}</div><span>${sp}</span>`;
+    d.addEventListener('click',e=>{e.stopPropagation();toggleSP(sp)});
+    c.appendChild(d);
+  });
+}
+function syncGroupSPs(){
+  groups.forEach(g=>{g.sps=new Set([...g.sps].filter(s=>selSPs.has(s)))});
+  const covered=new Set(groups.flatMap(g=>[...g.sps]));
+  const uncovered=[...selSPs].filter(s=>!covered.has(s));
+  if(uncovered.length>0){
+    if(groups.length>0) uncovered.forEach(s=>groups[0].sps.add(s));
+    else groups=[{sps:new Set(uncovered),target:8,strategy:'extend',cutoff:''}];
+  }
+  groups=groups.filter(g=>g.sps.size>0);
+  renderGroups();
+}
+
+function addGroup(){groups.push({sps:new Set(),target:8,strategy:'extend',cutoff:''});renderGroups();}
+function setGroupCutoff(idx,el){
+  const v=el.value.trim();
+  if(v===''){groups[idx].cutoff='';el.style.borderColor='';return;}
+  const m=v.match(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/);
+  if(!m){el.style.borderColor='var(--danger-text)';alert('اكتب الوقت بصيغة 24 ساعة زي 04:00 أو 16:30');return;}
+  const hh=String(+m[1]).padStart(2,'0');
+  groups[idx].cutoff=hh+':'+m[2];el.value=groups[idx].cutoff;el.style.borderColor='';
+}
+function removeGroup(idx){
+  const orphans=[...groups[idx].sps];groups.splice(idx,1);
+  const covered=new Set(groups.flatMap(g=>[...g.sps]));
+  const still=orphans.filter(s=>selSPs.has(s)&&!covered.has(s));
+  if(still.length>0){if(groups.length>0)still.forEach(s=>groups[0].sps.add(s));else groups=[{sps:new Set(still),target:8,strategy:'extend',cutoff:''}];}
+  renderGroups();
+}
+function toggleGroupSP(idx,sp,checked){
+  if(checked){groups.forEach((g,i)=>{if(i!==idx)g.sps.delete(sp)});groups[idx].sps.add(sp);}
+  else{groups[idx].sps.delete(sp);}
+  updateGroupUI(idx);
+}
+function updateGroupUI(idx){
+  const g=groups[idx];
+  const tr=document.getElementById('grp-tr-'+idx);
+  if(tr)tr.querySelector('span').textContent=g.sps.size>0?g.sps.size+' نقطة محددة':'اختار النقط...';
+  const container=document.getElementById('grp-items-'+idx);
+  if(container){
+    container.querySelectorAll('.dd-item').forEach(item=>{
+      const sp=item.querySelector('span').textContent;
+      const chk=g.sps.has(sp);
+      item.classList.toggle('checked',chk);
+      item.querySelector('.dd-check').textContent=chk?'✓':'';
+      item.onclick=((s,c)=>e=>{toggleGroupSP(idx,s,!c);e.stopPropagation()})(sp,chk);
+    });
+  }
+  const row=document.getElementById('grp-tr-'+idx)?.closest('.card');
+  if(row){
+    const tagsDiv=row.querySelector('[data-tags]');
+    if(tagsDiv){
+      tagsDiv.innerHTML=[...g.sps].sort().map(sp=>{
+        const safe=sp.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div class="tag" style="font-size:11px;padding:3px 8px">${sp}<span class="tag-x" onclick="toggleGroupSP(${idx},'${safe}',false)">✕</span></div>`;
+      }).join('')||'<span style="font-size:12px;color:var(--text-muted)">لا توجد نقط محددة</span>';
+    }
+  }
+  const avg=calcAvgForSPs(g.sps);
+  const avgEl=row?.querySelector('.grp-avg');
+  if(avgEl)avgEl.innerHTML=avg!==null?'متوسط الساعات: <b>'+fmtH(avg)+'</b>':'';
+}
+function toggleGroupDD(idx){
+  document.querySelectorAll('.grp-dd-menu').forEach((m,i)=>{if(i!==idx)m.classList.remove('open');});
+  const menu=document.getElementById('grp-dd-'+idx);
+  const trigger=document.getElementById('grp-tr-'+idx);
+  const open=menu.classList.toggle('open');
+  trigger.classList.toggle('open',open);
+  if(open){setTimeout(()=>{const q=document.getElementById('grp-q-'+idx);if(q)q.focus();},50);}
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.grp-dd-wrap')){
+    document.querySelectorAll('.grp-dd-menu').forEach(m=>m.classList.remove('open'));
+    document.querySelectorAll('.grp-tr').forEach(t=>t.classList.remove('open'));
+  }
+});
+function renderGroups(){
+  const list=document.getElementById('cond-list');list.innerHTML='';
+  if(selSPs.size===0&&allSPs.length===0){list.innerHTML='<div class="no-sp-msg">اختار starting points الأول</div>';return;}
+  groups.forEach((g,i)=>{
+    const avg=calcAvgForSPs(g.sps);
+    const avgStr=avg!==null?'متوسط الساعات: <b>'+fmtH(avg)+'</b>':'';
+    const ddItems=allSPs.map(sp=>{
+      const chk=g.sps.has(sp);
+      const safeSp=sp.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return `<div class="dd-item ${chk?'checked':''}" onclick="toggleGroupSP(${i},'${safeSp}',${!chk});event.stopPropagation()"><div class="dd-check">${chk?'✓':''}</div><span>${sp}</span></div>`;
+    }).join('');
+    const tags=[...g.sps].sort().map(sp=>{
+      const safeSp=sp.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return `<div class="tag" style="font-size:11px;padding:3px 8px">${sp}<span class="tag-x" onclick="toggleGroupSP(${i},'${safeSp}',false)">✕</span></div>`;
+    }).join('');
+    const row=document.createElement('div');
+    row.className='card';row.style.cssText='margin-bottom:8px;padding:12px';
+    row.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+        <div><span style="font-weight:600;font-size:13px">Group ${i+1}</span>${avgStr?`<span class="cond-sp-avg grp-avg" style="display:inline;margin-right:8px">${avgStr}</span>`:`<span class="cond-sp-avg grp-avg" style="display:inline;margin-right:8px"></span>`}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="clabel">Target h</span>
+          <input class="cinput" type="number" min="1" max="24" step="0.5" value="${g.target}" onchange="groups[${i}].target=+this.value">
+          <select class="cselect" onchange="groups[${i}].strategy=this.value">
+            <option value="extend" ${g.strategy==='extend'?'selected':''}>⏩ Extend</option>
+            <option value="gaps" ${g.strategy==='gaps'?'selected':''}>🔀 Fill gaps</option>
+            <option value="hybrid" ${g.strategy==='hybrid'?'selected':''}>⚡ Hybrid</option>
+          </select>
+          <span class="clabel">🔒 قفل الساعة (24h)</span>
+          <input class="cinput" style="width:66px" type="text" inputmode="numeric" placeholder="04:00" maxlength="5" value="${g.cutoff||''}" onchange="setGroupCutoff(${i},this)">
+          <button class="cx" onclick="removeGroup(${i})">✕</button>
+        </div>
+      </div>
+      <div class="grp-dd-wrap" style="position:relative;margin-bottom:8px">
+        <div class="dd-trigger grp-tr" id="grp-tr-${i}" onclick="toggleGroupDD(${i});event.stopPropagation()">
+          <span>${g.sps.size>0?g.sps.size+' نقطة محددة':'اختار النقط...'}</span><span class="dd-arrow">▼</span>
+        </div>
+        <div class="dd-menu grp-dd-menu" id="grp-dd-${i}">
+          <div class="dd-search"><input type="text" placeholder="بحث..." id="grp-q-${i}" oninput="filterGrpDD(${i})" onclick="event.stopPropagation()"></div>
+          <div class="dd-actions">
+            <button class="dd-act-btn" onclick="[...allSPs].forEach(s=>toggleGroupSP(${i},s,true));event.stopPropagation()">تحديد الكل</button>
+            <button class="dd-act-btn" onclick="groups[${i}].sps.clear();renderGroups();event.stopPropagation()">إلغاء الكل</button>
+          </div>
+          <div id="grp-items-${i}">${ddItems}</div>
+        </div>
+      </div>
+      <div data-tags style="display:flex;flex-wrap:wrap;gap:4px">${tags||'<span style="font-size:12px;color:var(--text-muted)">لا توجد نقط محددة</span>'}</div>`;
+    list.appendChild(row);
+  });
+}
+function calcAvgForSPs(sps){
+  if(!rows.length||!sps.size)return null;
+  const filtered=getFilteredRows();if(!filtered.length)return null;
+  const cols=Object.keys(filtered[0]);
+  const norm=s=>s.toLowerCase().replace(/[\s_\-()]/g,'');
+  const durCol=cols.find(c=>norm(c).includes('duration'));
+  const idCol=cols.find(c=>norm(c)==='employeeid')||cols.find(c=>norm(c).includes('employeeid'));
+  const spNameCol=_spNameCol;
+  if(!durCol||!idCol||!spNameCol)return null;
+  const empTotals={};
+  filtered.forEach(r=>{
+    const sp=String(r[spNameCol]||'').trim();if(!sps.has(sp))return;
+    const id=String(r[idCol]||'').trim();const dur=parseSec(r[durCol]);
+    if(!id||!dur)return;if(!empTotals[id])empTotals[id]=0;empTotals[id]+=(dur||0);
+  });
+  const totals=Object.values(empTotals);if(!totals.length)return null;
+  return totals.reduce((a,b)=>a+b,0)/totals.length;
+}
+
+function parseSec(v){
+  if(v===null||v===undefined||v==='')return null;
+  if(typeof v==='number')return Math.round(v*86400);
+  const p=String(v).trim().split(':');
+  if(p.length===3)return +p[0]*3600+ +p[1]*60+ +p[2];
+  if(p.length===2)return +p[0]*3600+ +p[1]*60;
+  return null;
+}
+function toHHMM(s){
+  if(s==null)return '';
+  s=((Math.round(s)%86400)+86400)%86400;
+  return String(Math.floor(s/3600)).padStart(2,'0')+':'+String(Math.floor((s%3600)/60)).padStart(2,'0');
+}
+function fmtH(s){
+  if(s==null)return '—';s=Math.round(Math.abs(s));
+  return Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m';
+}
+function fmtDate(v){
+  if(!v)return '';
+  if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400*1000));return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}
+  const s=String(v).trim();return /^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(0,10):s;
+}
+
+function runAnalysis(){
+  showErr('');
+  if(!rows.length){showErr('ارفع الملف الأول.');return}
+  if(!groups.length){showErr('حدد conditions.');return}
+  const cairoNow=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Cairo'}));
+  const cairoTimeStr=String(cairoNow.getHours()).padStart(2,'0')+':'+String(cairoNow.getMinutes()).padStart(2,'0');
+  document.getElementById('time-display').textContent='🕐 الوقت الحالي (القاهرة): '+cairoTimeStr;
+  const filtered=getFilteredRows();
+  if(!filtered.length){showErr('مفيش شيفتات بالتاريخ ده.');return}
+  const cols=Object.keys(filtered[0]);
+  const norm=s=>s.toLowerCase().replace(/[\s_\-()]/g,'');
+  const nameCol=cols.find(c=>['employeename','name'].includes(norm(c)))||cols.find(c=>norm(c).includes('employeename')||norm(c).includes('empname'));
+  const idCol=cols.find(c=>norm(c)==='employeeid')||cols.find(c=>norm(c).includes('employeeid'));
+  const shiftCol=cols.find(c=>norm(c)==='shiftid')||cols.find(c=>norm(c).includes('shiftid'));
+  const durCol=cols.find(c=>norm(c).includes('duration'));
+  const sTCol=cols.find(c=>norm(c)==='plannedstarttime')||cols.find(c=>norm(c).includes('plannedstart'))||cols.find(c=>norm(c).includes('starttime'));
+  const eTCol=cols.find(c=>norm(c)==='plannedendtime')||cols.find(c=>norm(c).includes('plannedend'))||cols.find(c=>norm(c).includes('endtime'));
+  const sDCol=cols.find(c=>norm(c).includes('startdate'));
+  const eDCol=cols.find(c=>norm(c).includes('enddate'));
+  const spIdCol=_spIdCol,spNameCol=_spNameCol;
+  if(!nameCol||!durCol){showErr('مش لاقي employee name أو duration.');return}
+  const spToGroup={};
+  groups.forEach(g=>[...g.sps].forEach(sp=>{spToGroup[sp]=g}));
+  const riderMap={};
+  filtered.forEach(row=>{
+    const name=String(row[nameCol]||'').trim();if(!name)return;
+    const spName=spNameCol?String(row[spNameCol]||'').trim():'';
+    const spId=spIdCol?String(row[spIdCol]||'').trim():'';
+    if(!spName)return;
+    const spInAnyGroup=groups.some(g=>g.sps.has(spName));if(!spInAnyGroup)return;
+    const empId=idCol?String(row[idCol]||'').trim():'';
+    const shiftId=shiftCol?row[shiftCol]:'';
+    const dur=parseSec(row[durCol]);
+    const startT=sTCol?parseSec(row[sTCol]):null;
+    const endT=eTCol?parseSec(row[eTCol]):null;
+    const startDate=sDCol?fmtDate(row[sDCol]):'';
+    const endDate=eDCol?fmtDate(row[eDCol]):'';
+    if(!riderMap[name])riderMap[name]={empId,total:0,shifts:[]};
+    riderMap[name].total+=(dur||0);
+    const resolvedSpId=spId||(window._spNameToId&&window._spNameToId[spName])||spName;
+    riderMap[name].shifts.push({shiftId,dur:dur||0,startT,endT,startDate,endDate,spName,spId:resolvedSpId});
+    riderMap[name].empId=empId;
+  });
+  results=[];uploads=[];
+  let totalR=0,belowT=0,totalNeed=0,totalInvalid=0,totalCapped=0;
+  Object.entries(riderMap).forEach(([name,data])=>{
+    totalR++;
+    data.shifts.sort((a,b)=>{
+      const absA=(a.startDate?new Date(a.startDate+'T00:00:00Z').getTime()/1000:0)+(a.endT??0)+((a.endT??0)<(a.startT??0)?86400:0);
+      const absB=(b.startDate?new Date(b.startDate+'T00:00:00Z').getTime()/1000:0)+(b.endT??0)+((b.endT??0)<(b.startT??0)?86400:0);
+      return absA-absB;
+    });
+    const last=data.shifts[data.shifts.length-1];
+    const lastStartStr=toHHMM(last.startT);
+    const lastStartMins=parseInt(lastStartStr.split(':')[1]||'0');
+    if(![0,15,30,45].includes(lastStartMins)){totalInvalid++;return;}
+    const nowCairo=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Cairo'}));
+    const todayAbs2=new Date(nowCairo.toISOString().slice(0,10)+'T00:00:00Z').getTime()/1000;
+    const nowAbs2=todayAbs2+nowCairo.getHours()*3600+nowCairo.getMinutes()*60;
+    const lastAbsEnd=(last.startDate?new Date(last.startDate+'T00:00:00Z').getTime()/1000:0)+(last.endT??0)+((last.endT??0)<(last.startT??0)?86400:0);
+    if(lastAbsEnd<=nowAbs2)return;
+    const grp=spToGroup[last.spName]||groups[0];
+    const targetSec=grp.target*3600;
+    const strat=grp.strategy;
+    if(data.total>=targetSec)return;
+    belowT++;const needed=targetSec-data.total;totalNeed+=needed;
+    const nowCairoDate=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Cairo'}));
+    const todayAbsSec=Math.floor(new Date(nowCairoDate.toISOString().slice(0,10)+'T00:00:00Z').getTime()/1000);
+    const nowAbsSec=todayAbsSec+nowCairoDate.getHours()*3600+nowCairoDate.getMinutes()*60;
+    const toAbs=s=>{const base=s.startDate?new Date(s.startDate+'T00:00:00Z').getTime()/1000:0;const eT=s.endT??0;const sT=s.startT??0;return base+eT+(eT<sT?86400:0);};
+    const toAbsStart=s=>{const base=s.startDate?new Date(s.startDate+'T00:00:00Z').getTime()/1000:0;return base+(s.startT??0);};
+    const gaps=[];
+    for(let i=1;i<data.shifts.length;i++){
+      const prevS=data.shifts[i-1],nextS=data.shifts[i];
+      const prevEnd=toAbs(prevS),nextStart=toAbsStart(nextS);
+      const g=nextStart-prevEnd;
+      if(g>0&&prevEnd>=nowAbsSec)gaps.push({prevShift:prevS,gapSec:g,prevEnd,nextStart});
+    }
+    function calcEndDate(startDate,startT,newEndT){
+      if(!startDate)return startDate;
+      const wrappedEnd=newEndT%86400;
+      const crossesMidnight=newEndT>=86400||wrappedEnd<(startT??0);
+      if(crossesMidnight){const d=new Date(startDate+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10);}
+      return startDate;
+    }
+    let remainNeeded=needed,uploadRowsForRider=[],totalAddedSec=0;
+    if(strat==='hybrid'||strat==='gaps'){
+      for(const {prevShift,gapSec} of gaps){
+        if(remainNeeded<=0)break;
+        const fillSec=Math.min(gapSec,remainNeeded);
+        const newPrevEndT=(prevShift.endT??0)+fillSec;
+        const newEndDate2=calcEndDate(prevShift.startDate,prevShift.startT,newPrevEndT);
+        uploadRowsForRider.push({shift_id:prevShift.shiftId,adjustment_type:'UPDATE',employee_id:data.empId,starting_point_id:prevShift.spId,start_date:prevShift.startDate,end_date:newEndDate2,'start_time (local)':toHHMM(prevShift.startT),'end_time (local)':toHHMM(newPrevEndT),shift_slots:''});
+        remainNeeded-=fillSec;totalAddedSec+=fillSec;
+      }
+    }
+    let addSecOnLast=0;
+    if(strat==='extend')addSecOnLast=needed;
+    else if((strat==='hybrid'||strat==='gaps')&&remainNeeded>0)addSecOnLast=remainNeeded;
+    const oldEnd=last.endT??0;
+    let cappedByClosing=false;
+    if(grp.cutoff){
+      const cutoffT=parseSec(grp.cutoff);
+      if(cutoffT!=null){
+        const startT=last.startT??0;
+        const oldEndNorm=(last.endT??0)+((last.endT??0)<startT?86400:0);
+        const cutoffDomain=cutoffT+(cutoffT<startT?86400:0);
+        if(oldEndNorm>=cutoffDomain){
+          cappedByClosing=true;addSecOnLast=0;
+          const cappedEndDate=calcEndDate(last.startDate,last.startT,cutoffDomain);
+          uploadRowsForRider.push({shift_id:last.shiftId,adjustment_type:'UPDATE',employee_id:data.empId,starting_point_id:last.spId,start_date:last.startDate,end_date:cappedEndDate,'start_time (local)':toHHMM(last.startT),'end_time (local)':toHHMM(cutoffDomain),shift_slots:''});
+        } else {
+          const maxAdd=Math.max(0,cutoffDomain-oldEndNorm);
+          if(addSecOnLast>maxAdd){cappedByClosing=true;addSecOnLast=maxAdd;}
+        }
+      }
+    }
+    const newEnd=oldEnd+addSecOnLast;
+    let newEndDate=last.startDate;
+    if(addSecOnLast>0){newEndDate=calcEndDate(last.startDate,last.startT,newEnd);}else{newEndDate=last.endDate;}
+    if(addSecOnLast>0){uploadRowsForRider.push({shift_id:last.shiftId,adjustment_type:'UPDATE',employee_id:data.empId,starting_point_id:last.spId,start_date:last.startDate,end_date:newEndDate,'start_time (local)':toHHMM(last.startT),'end_time (local)':toHHMM(newEnd),shift_slots:''});}
+    uploads.push(...uploadRowsForRider);
+    const addSec=totalAddedSec+addSecOnLast;
+    const displayNewEnd=addSecOnLast>0?newEnd:oldEnd;
+    const stillShort=cappedByClosing&&(data.total+addSec)<targetSec;
+    const remainingShort=stillShort?(targetSec-(data.total+addSec)):0;
+    if(stillShort)totalCapped++;
+    results.push({name,empId:data.empId,shiftId:last.shiftId,spName:last.spName,spId:last.spId,total:data.total,target:targetSec,needed,addSec,startStr:toHHMM(last.startT),oldEndStr:toHHMM(oldEnd),newEndStr:toHHMM(displayNewEnd),startDate:last.startDate,endDate:newEndDate,uploadCount:uploadRowsForRider.length,stillShort,remainingShort});
+  });
+  results.sort((a,b)=>a.total-b.total);
+  document.getElementById('summary-grid').innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">إجمالي</div><div class="stat-val">${totalR}</div></div>
+    <div class="stat-card"><div class="stat-lbl">تحت الـ target</div><div class="stat-val" style="color:var(--accent-text)">${belowT}</div><div class="stat-sub">${Math.round(belowT/Math.max(totalR,1)*100)}%</div></div>
+    <div class="stat-card"><div class="stat-lbl">ساعات ناقصة</div><div class="stat-val">${fmtH(totalNeed)}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Groups</div><div class="stat-val">${groups.length}</div></div>
+    ${totalInvalid>0?`<div class="stat-card"><div class="stat-lbl">غير قابل للزيادة</div><div class="stat-val" style="color:var(--danger-text)">${totalInvalid}</div><div class="stat-sub">شيفت مكسور</div></div>`:''}
+    ${totalCapped>0?`<div class="stat-card"><div class="stat-lbl">🔒 اتقفل عليهم الوقت</div><div class="stat-val" style="color:var(--danger-text)">${totalCapped}</div><div class="stat-sub">لسه ناقصين رغم القفل</div></div>`:''}`;
+  document.getElementById('cnt-a').textContent=results.length+' مندوب';
+  const ta=document.getElementById('tbody-a');ta.innerHTML='';
+  if(!results.length){ta.innerHTML='<tr class="empty-r"><td colspan="10">🎉 كل المناديب وصلوا الـ target!</td></tr>';}
+  else{results.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML=`<td style="font-weight:500">${r.name}</td><td style="color:var(--text-secondary);font-size:12px">${r.empId||'—'}</td><td style="color:var(--text-secondary);font-size:12px">${r.shiftId||'—'}</td><td style="font-size:12px">${r.spName||'—'}</td><td><span class="pill pw">${fmtH(r.total)}</span></td><td style="color:var(--text-secondary)">${fmtH(r.target)}</td><td><span class="pill pi">${fmtH(r.needed)}</span></td><td>${r.startStr}</td><td style="color:var(--text-secondary)">${r.oldEndStr}</td><td class="hnew">${r.addSec>0?r.newEndStr+(r.uploadCount>1?' <span class="pill ps">'+r.uploadCount+' صفوف</span>':'')+(r.stillShort?' <span class="pill pw">🔒 لسه ناقص '+fmtH(r.remainingShort)+'</span>':''):'<span class="pill ps">OK</span>'}</td>`;ta.appendChild(tr);});}
+  document.getElementById('cnt-u').textContent=uploads.length+' صف';
+  const tu=document.getElementById('tbody-u');tu.innerHTML='';
+  if(!uploads.length){tu.innerHTML='<tr class="empty-r"><td colspan="10">مفيش صفوف للرفع</td></tr>';}
+  else{uploads.forEach((u,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td><input type="checkbox" class="row-check" data-idx="${i}" checked onchange="updateSelectedCount()"></td><td>${u.shift_id}</td><td>UPDATE</td><td>${u.employee_id}</td><td>${u.starting_point_id}</td><td>${u.start_date}</td><td>${u.end_date}</td><td>${u['start_time (local)']}</td><td class="hnew">${u['end_time (local)']}</td><td></td>`;tu.appendChild(tr);});updateSelectedCount();}
+  document.getElementById('results-sec').style.display='block';
+}
+
+function saveGroups(){
+  const toSave=groups.map(g=>({sps:[...g.sps],target:g.target,strategy:g.strategy,cutoff:g.cutoff||''}));
+  localStorage.setItem('extShiftsGroups',JSON.stringify(toSave));
+  const btn=event.target;btn.textContent='✅ تم الحفظ!';setTimeout(()=>btn.textContent='💾 حفظ الإعدادات',2000);
+}
+function loadSavedGroups(){
+  try{
+    const saved=localStorage.getItem('extShiftsGroups');if(!saved)return false;
+    const parsed=JSON.parse(saved);if(!parsed||!parsed.length)return false;
+    groups=parsed.map(g=>({sps:new Set(g.sps),target:g.target||8,strategy:g.strategy||'extend',cutoff:g.cutoff||''}));
+    return true;
+  }catch(e){return false;}
+}
+function clearSavedGroups(){localStorage.removeItem('extShiftsGroups');alert('تم مسح الإعدادات المحفوظة');}
+
+function updateSelectedCount(){
+  const checks=document.querySelectorAll('.row-check');
+  const checked=[...checks].filter(c=>c.checked).length;
+  document.getElementById('selected-count').textContent=checked+' صف محدد من '+uploads.length;
+  document.getElementById('check-all').checked=checked===checks.length;
+  document.getElementById('check-all').indeterminate=checked>0&&checked<checks.length;
+}
+function toggleAllCheckboxes(val){document.querySelectorAll('.row-check').forEach(c=>c.checked=val);updateSelectedCount();}
+function toggleAllRows(){
+  const checks=document.querySelectorAll('.row-check');
+  const allChecked=[...checks].every(c=>c.checked);
+  toggleAllCheckboxes(!allChecked);
+  document.getElementById('toggle-all-btn').textContent=allChecked?'تحديد الكل':'إلغاء تحديد الكل';
+}
+function exportUpload(){
+  updateSteps(4);
+  const checks=document.querySelectorAll('.row-check');
+  const selected=uploads.filter((_,i)=>checks[i]?.checked);
+  if(!selected.length){alert('اختار صفوف الأول!');return;}
+  const hdrs=['shift_id','adjustment_type','employee_id','starting_point_id','start_date','end_date','start_time (local)','end_time (local)','shift_slots'];
+  const data=[hdrs,...selected.map(u=>hdrs.map(h=>u[h]??''))];
+  const csv=data.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='shift_upload_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+function exportAnalysis(){
+  if(!results.length)return;
+  const hdrs=['Employee Name','Employee ID','Shift ID','Starting Point','Total','Target','Needed','Start','Old End','New End'];
+  const data=[hdrs,...results.map(r=>[r.name,r.empId,r.shiftId,r.spName,fmtH(r.total),fmtH(r.target),fmtH(r.needed),r.startStr,r.oldEndStr,r.addSec>0?r.newEndStr:'No change'])];
+  const csv=data.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='shift_analysis.csv';a.click();
+}
+
+// ── Shift Creator ──
+let scGroups=[],scTimeOptions=[],scRows=[];
+function initTimeOptions(){if(scTimeOptions.length)return;for(let h=0;h<24;h++)for(let m=0;m<60;m+=15)scTimeOptions.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));}
+function addScGroup(){scGroups.push({spId:'',spName:'',startTime:'00:00',endTime:'08:00',ids:'',startDate:'',days:1});renderScGroups();}
+function removeScGroup(idx){scGroups.splice(idx,1);renderScGroups();}
+function renderScGroups(){
+  initTimeOptions();const list=document.getElementById('sc-groups-list');list.innerHTML='';
+  if(!scGroups.length){list.innerHTML='<div class="no-sp-msg" style="margin-bottom:1rem">اضغط "+ إضافة group جديد" للبدء</div>';return;}
+  scGroups.forEach((g,i)=>{
+    const timeOpts=scTimeOptions.map(t=>`<option value="${t}" ${g.startTime===t?'selected':''}>${t}</option>`).join('');
+    const timeOptsEnd=scTimeOptions.map(t=>`<option value="${t}" ${g.endTime===t?'selected':''}>${t}</option>`).join('');
+    const spName=window._spNameToId?Object.entries(window._spNameToId).find(([n,id])=>id===g.spId)?.[0]||'':'';
+    const spLabel=spName?spName+' ('+g.spId+')':(g.spId||'اختار نقطة...');
+    const div=document.createElement('div');div.className='card';div.style.cssText='margin-bottom:8px;padding:12px';
+    div.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-weight:600;font-size:13px">Group ${i+1}</span><button class="cx" onclick="removeScGroup(${i})">✕</button></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Starting Point</label>
+          <div class="dropdown-wrap" style="position:relative">
+            <div class="dd-trigger" id="sc-tr-${i}" onclick="toggleScDD(${i});event.stopPropagation()" style="font-size:12px;padding:7px 10px"><span id="sc-tr-lbl-${i}">${spLabel}</span><span class="dd-arrow">▼</span></div>
+            <div class="dd-menu" id="sc-dd-${i}" style="z-index:300"><div class="dd-search"><input type="text" placeholder="بحث..." id="sc-q-${i}" oninput="filterScDD(${i})" onclick="event.stopPropagation()" style="width:100%;border:none;background:transparent;outline:none;font-size:13px;color:var(--text-primary)"></div><div id="sc-dd-items-${i}"></div></div>
+          </div>
+          <input type="text" placeholder="أو SP ID يدوياً" value="${g.spId}" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:12px;outline:none;margin-top:4px" oninput="scGroups[${i}].spId=this.value;document.getElementById('sc-tr-lbl-${i}').textContent=this.value||'اختار نقطة...'">
+        </div>
+        <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Start Time</label><select style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:12px;outline:none" onchange="scGroups[${i}].startTime=this.value">${timeOpts}</select></div>
+        <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">End Time</label><select style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:12px;outline:none" onchange="scGroups[${i}].endTime=this.value">${timeOptsEnd}</select></div>
+        <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Start Date</label>
+          <input type="date" value="${g.startDate||''}" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:12px;outline:none;margin-bottom:4px" onchange="scGroups[${i}].startDate=this.value">
+          <input type="number" min="1" max="30" value="${g.days||1}" placeholder="عدد الأيام" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:12px;outline:none" onchange="scGroups[${i}].days=+this.value">
+          <span style="font-size:11px;color:var(--text-muted)">عدد الأيام</span>
+        </div>
+      </div>
+      <div><label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Employee IDs (كل ID في سطر)</label>
+        <textarea rows="4" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text-primary);font-size:12px;outline:none;resize:vertical;font-family:monospace" onchange="scGroups[${i}].ids=this.value" oninput="scGroups[${i}].ids=this.value">${g.ids}</textarea>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+function showSection(name){
+  ['analyzer','creator','requests','ending','report'].forEach(s=>{const el=document.getElementById('section-'+s);if(el)el.style.display=name===s?'block':'none';});
+  ['analyzer','creator','requests','ending','report'].forEach(s=>{const btn=document.getElementById('nav-'+s);if(btn)btn.style.cssText=name===s?'background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent-border)':'';});
+  if(name==='creator')initCreator();
+  if(name==='report')loadReport();
+}
+function refreshCreatorSPs(){const spSel=document.getElementById('sc-sp');if(!spSel||!window._spNameToId)return;}
+function initCreator(){initTimeOptions();if(!scGroups.length)loadScGroups();renderScGroups();}
+function generateShifts(){
+  const errEl=document.getElementById('sc-err');errEl.style.display='none';
+  if(!scGroups.length){errEl.textContent='أضف group واحد على الأقل';errEl.style.display='block';return;}
+  const today=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Cairo'}));
+  const todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const tbody=document.getElementById('sc-tbody');tbody.innerHTML='';scRows=[];
+  scGroups.forEach((g)=>{
+    const spId=g.spId.trim();const startTime=g.startTime;const endTime=g.endTime;
+    const ids=[...new Set(g.ids.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean))];
+    if(!spId||!ids.length)return;
+    const startSec=+startTime.split(':')[0]*3600+ +startTime.split(':')[1]*60;
+    const endSec=+endTime.split(':')[0]*3600+ +endTime.split(':')[1]*60;
+    const numDays=g.days||1;const baseDate=g.startDate||todayStr;
+    for(let day=0;day<numDays;day++){
+      const sd=new Date(baseDate+'T00:00:00Z');sd.setUTCDate(sd.getUTCDate()+day);
+      const startDate=sd.toISOString().slice(0,10);
+      const ed=new Date(startDate+'T00:00:00Z');if(endSec<=startSec)ed.setUTCDate(ed.getUTCDate()+1);
+      const endDate=ed.toISOString().slice(0,10);
+      ids.forEach(id=>{
+        let exportEndTime=endTime,exportEndDate=endDate;
+        if(endTime==='00:00'){exportEndTime='23:59';exportEndDate=startDate;}
+        const row={shift_id:'',adjustment_type:'CREATE',employee_id:id,starting_point_id:spId,start_date:startDate,end_date:exportEndDate,'start_time (local)':startTime,'end_time (local)':exportEndTime,shift_slots:''};
+        scRows.push(row);
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td style="padding:9px 10px;border-bottom:1px solid var(--border)"></td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">CREATE</td><td style="padding:9px 10px;border-bottom:1px solid var(--border);font-weight:500">${id}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${spId}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${startDate}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${endDate}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${startTime}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border);color:var(--accent-text);font-weight:600">${endTime}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)"></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  });
+  if(!scRows.length){errEl.textContent='مفيش بيانات كافية — تأكد إن كل group فيه SP وIDs';errEl.style.display='block';return;}
+  document.getElementById('sc-count').textContent=scRows.length+' شيفت';
+  const breakdown={};
+  scGroups.forEach(g=>{
+    if(!g.spId)return;
+    const spName=window._spNameToId?Object.entries(window._spNameToId).find(([n,id])=>id===g.spId)?.[0]||g.spId:g.spId;
+    const ids=[...new Set(g.ids.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean))];
+    if(!ids.length)return;
+    const key=spName+' ('+g.spId+')';
+    if(!breakdown[key])breakdown[key]={ids:new Set(),days:g.days||1};
+    ids.forEach(id=>breakdown[key].ids.add(id));breakdown[key].days=Math.max(breakdown[key].days,g.days||1);
+  });
+  const bdEl=document.getElementById('sc-breakdown');
+  bdEl.innerHTML=Object.entries(breakdown).map(([name,{ids,days}])=>`<span style="font-size:12px;color:var(--text-secondary);background:var(--bg);padding:3px 10px;border-radius:20px;border:1px solid var(--border)">${name}: <b>${ids.size} ID</b> × ${days} Days</span>`).join('');
+  document.getElementById('sc-results').style.display='block';
+}
+function exportCreator(){
+  if(!scRows.length)return;
+  const hdrs=['shift_id','adjustment_type','employee_id','starting_point_id','start_date','end_date','start_time (local)','end_time (local)','shift_slots'];
+  const data=[hdrs,...scRows.map(r=>hdrs.map(h=>r[h]??''))];
+  const csv=data.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='shift_create_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+function toggleScDD(idx){
+  document.querySelectorAll('.dd-menu').forEach(m=>{if(m.id!=='sc-dd-'+idx)m.classList.remove('open');});
+  const menu=document.getElementById('sc-dd-'+idx);const trigger=document.getElementById('sc-tr-'+idx);
+  if(!menu||!trigger)return;
+  const open=menu.classList.toggle('open');trigger.classList.toggle('open',open);
+  if(open){populateScDD(idx);setTimeout(()=>{const q=document.getElementById('sc-q-'+idx);if(q)q.focus();},50);}
+}
+function populateScDD(idx){
+  const container=document.getElementById('sc-dd-items-'+idx);if(!container)return;
+  const q=document.getElementById('sc-q-'+idx)?.value.toLowerCase()||'';container.innerHTML='';
+  if(!window._spNameToId){container.innerHTML='<div style="padding:10px;font-size:12px;color:var(--text-muted)">ارفع ملف في Bulk Action أول</div>';return;}
+  Object.entries(window._spNameToId).sort((a,b)=>a[0].localeCompare(b[0])).filter(([n])=>n.toLowerCase().includes(q)).forEach(([name,id])=>{
+    const chk=scGroups[idx]?.spId===id;
+    const d=document.createElement('div');d.className='dd-item'+(chk?' checked':'');
+    d.innerHTML=`<div class="dd-check">${chk?'✓':''}</div><span>${name} (${id})</span>`;
+    d.addEventListener('click',e=>{e.stopPropagation();if(scGroups[idx])scGroups[idx].spId=id;const lbl=document.getElementById('sc-tr-lbl-'+idx);if(lbl)lbl.textContent=name+' ('+id+')';document.getElementById('sc-dd-'+idx)?.classList.remove('open');document.getElementById('sc-tr-'+idx)?.classList.remove('open');});
+    container.appendChild(d);
+  });
+}
+function filterScDD(idx){populateScDD(idx);}
+function saveScGroups(){
+  const toSave=scGroups.map(g=>({spId:g.spId,startTime:g.startTime,endTime:g.endTime,ids:g.ids,startDate:g.startDate,days:g.days}));
+  localStorage.setItem('extShiftsCreator',JSON.stringify(toSave));
+  const btn=event.target;btn.textContent='✅ تم الحفظ!';setTimeout(()=>btn.textContent='💾 حفظ الإعدادات',2000);
+}
+function loadScGroups(){
+  try{const saved=localStorage.getItem('extShiftsCreator');if(!saved)return false;const parsed=JSON.parse(saved);if(!parsed?.length)return false;scGroups=parsed.map(g=>({spId:g.spId||'',startTime:g.startTime||'00:00',endTime:g.endTime||'08:00',ids:g.ids||'',startDate:g.startDate||'',days:g.days||1}));return true;}catch(e){return false;}
+}
+function clearScGroups(){localStorage.removeItem('extShiftsCreator');scGroups=[];renderScGroups();}
+function updateSteps(active){for(let i=1;i<=4;i++){const el=document.getElementById('step-'+i);if(!el)continue;el.className='step'+(i<active?' done':i===active?' active':'');}}
+
+// ── Extend Requests ──
+let reqShiftsRows=[],reqRequestRows=[],reqOutputRows=[],_skippedRows=[],_filteredRows=[];
+function loadReqFile(fileInput,dzId,nameId,iconId,storeKey){
+  const file=fileInput.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      let wb;const fileName=(fileInput.files[0]||{}).name||'';
+      if(fileName.toLowerCase().endsWith('.csv')){const text=new TextDecoder('utf-8').decode(new Uint8Array(ev.target.result));wb=XLSX.read(text,{type:'string'});}
+      else{wb=XLSX.read(ev.target.result,{type:'array'});}
+      const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',header:1});
+      if(storeKey==='shifts')reqShiftsRows=data;else reqRequestRows=data;
+      document.getElementById(iconId).textContent='✅';
+      document.getElementById(nameId).textContent=file.name+' — '+(data.length-1)+' صف';
+      document.getElementById(dzId).classList.add('loaded');
+    }catch(e){alert('تعذر قراءة الملف');}
+  };
+  reader.readAsArrayBuffer(file);
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('fi-req-shifts').addEventListener('change',e=>loadReqFile(e.target,'dz-req-shifts','dz-req-shifts-name','dz-req-shifts-icon','shifts'));
+  document.getElementById('fi-req-requests').addEventListener('change',e=>loadReqFile(e.target,'dz-req-requests','dz-req-requests-name','dz-req-requests-icon','requests'));
+  ['dz-req-shifts','dz-req-requests'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('hover')});
+    el.addEventListener('dragleave',()=>el.classList.remove('hover'));
+    el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('hover');const key=id.includes('shifts')?'shifts':'requests';const fi=document.getElementById(id.includes('shifts')?'fi-req-shifts':'fi-req-requests');const dt=new DataTransfer();dt.items.add(e.dataTransfer.files[0]);fi.files=dt.files;loadReqFile(fi,id,id+'-name',id+'-icon',key);});
+  });
+  if(!getUsername())document.getElementById('username-modal').style.display='flex';
+});
+function parseArabicTime(text){
+  if(!text)return null;text=String(text).trim();
+  const match=text.match(/(\d{1,2}):(\d{2})/);if(!match)return null;
+  let h=parseInt(match[1]),m=parseInt(match[2]);
+  const isAM=/صباح|الصبح|فجر|الفجر/.test(text);
+  const isMidnight=/بليل|بالليل|ليل|الليل/.test(text);
+  const isPM=/مساء|مغرب|المغرب|عشا|العشا|عصر|العصر|ضهر|الضهر|ظهر|الظهر/.test(text);
+  if(isMidnight){if(h===12)h=0;else h+=12;}
+  else if(isPM){if(h!==12)h+=12;}
+  else if(isAM){if(h===12)h=0;}
+  if(h>=24)h=h-24;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function runExtendRequests(){
+  const errEl=document.getElementById('req-err');errEl.style.display='none';
+  if(!reqShiftsRows.length){errEl.textContent='ارفع ملف الشيفتات أول';errEl.style.display='block';return;}
+  if(!reqRequestRows.length){errEl.textContent='ارفع ملف الريكويستات أول';errEl.style.display='block';return;}
+  const norm=s=>s.toLowerCase().replace(/[\s_\-()]/g,'');
+  const shiftHeaders=reqShiftsRows[0].map(h=>String(h||''));
+  const sIdCol=shiftHeaders.findIndex(h=>norm(h)==='shiftid'||norm(h).includes('shiftid'));
+  const sEmpCol=shiftHeaders.findIndex(h=>norm(h)==='employeeid'||norm(h).includes('employeeid'));
+  const sSPCol=shiftHeaders.findIndex(h=>/startingpointid/i.test(norm(h))&&!norm(h).includes('name'));
+  const sStartD=shiftHeaders.findIndex(h=>norm(h).includes('plannedstartdate')||norm(h).includes('startdate'));
+  const sEndD=shiftHeaders.findIndex(h=>norm(h).includes('plannedenddate')||norm(h).includes('enddate'));
+  const sStartT=shiftHeaders.findIndex(h=>norm(h).includes('plannedstarttime')||norm(h).includes('starttime'));
+  const sEndT=shiftHeaders.findIndex(h=>norm(h).includes('plannedendtime')||norm(h).includes('endtime'));
+  const nowCairo=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Cairo'}));
+  const nowSec=nowCairo.getHours()*3600+nowCairo.getMinutes()*60;
+  const todayStr=nowCairo.getFullYear()+'-'+String(nowCairo.getMonth()+1).padStart(2,'0')+'-'+String(nowCairo.getDate()).padStart(2,'0');
+  function parseSec2(v){if(!v&&v!==0)return null;if(typeof v==='number')return Math.round(v*86400);const p=String(v).trim().split(':');if(p.length>=2)return +p[0]*3600+ +p[1]*60;return null;}
+  function fmtDate2(v){if(!v)return '';if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400*1000));return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}return String(v).trim().slice(0,10);}
+  function toHHMM2(s){if(s==null)return '';s=((Math.round(s)%86400)+86400)%86400;return String(Math.floor(s/3600)).padStart(2,'0')+':'+String(Math.floor((s%3600)/60)).padStart(2,'0');}
+  const empShiftMap={};
+  for(let i=1;i<reqShiftsRows.length;i++){
+    const row=reqShiftsRows[i];const empId=String(row[sEmpCol]||'').trim();if(!empId)continue;
+    const startT=parseSec2(row[sStartT]);const endT=parseSec2(row[sEndT]);
+    const startDate=fmtDate2(row[sStartD]);const endDate=fmtDate2(row[sEndD]);
+    const baseAbs=startDate?new Date(startDate+'T00:00:00Z').getTime()/1000:0;
+    const absEnd=baseAbs+(endT??0)+((endT??0)<(startT??0)?86400:0);
+    const absNow=new Date(todayStr+'T00:00:00Z').getTime()/1000+nowSec;
+    if(absEnd<=absNow)continue;
+    if(!empShiftMap[empId]||absEnd>empShiftMap[empId].absEnd){
+      empShiftMap[empId]={shiftId:String(row[sIdCol]||'').trim(),spId:String(row[sSPCol]||'').trim(),startDate,endDate,startT,endT,absEnd,startTStr:toHHMM2(startT),endTStr:toHHMM2(endT)};
+    }
+  }
+  const timeCol=4,idCol=5,statusCol=7;
+  const tbody=document.getElementById('req-tbody');tbody.innerHTML='';
+  reqOutputRows=[];_skippedRows=[];_filteredRows=[];
+  const skippedRows=_skippedRows,filteredRows=_filteredRows;
+  let skipped=0,filteredOut=0;
+  for(let i=1;i<reqRequestRows.length;i++){
+    const row=reqRequestRows[i];
+    if(statusCol>=0){
+      const status=String(row[statusCol]||'').trim();
+      const normStatus=status.replace(/[إأآا]/g,'ا');
+      if(status&&normStatus!=='قيد الانتظار'){filteredOut++;filteredRows.push({riderId:String(row[idCol]||'').trim(),timeRaw:String(row[timeCol]||'').trim(),status});continue;}
+    }
+    const timeRaw=String(row[timeCol]||'').trim();const riderId=String(row[idCol]||'').trim();if(!riderId)continue;
+    const newEndTime=parseArabicTime(timeRaw);
+    if(!newEndTime){skipped++;skippedRows.push({riderId,timeRaw,reason:'الوقت مش واضح'});continue;}
+    const shift=empShiftMap[riderId];
+    if(!shift){skipped++;skippedRows.push({riderId,timeRaw,reason:'مفيش شيفت نشط'});continue;}
+    const newEndSec=+newEndTime.split(':')[0]*3600+ +newEndTime.split(':')[1]*60;
+    let newEndDate=shift.startDate;
+    if(newEndSec<=(shift.startT??0)){const d=new Date(shift.startDate+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1);newEndDate=d.toISOString().slice(0,10);}
+    const shiftEndSec=shift.endT??0;
+    const shiftEndNorm=shiftEndSec<(shift.startT??0)?shiftEndSec+86400:shiftEndSec;
+    const newEndNorm=newEndSec<(shift.startT??0)?newEndSec+86400:newEndSec;
+    if(newEndNorm<=shiftEndNorm){skipped++;skippedRows.push({riderId,timeRaw,reason:'الوقت أقل من أو يساوي نهاية الشيفت الحالية ('+shift.endTStr+')'});continue;}
+    const outRow={shift_id:shift.shiftId,adjustment_type:'UPDATE',employee_id:riderId,starting_point_id:shift.spId||shift.spName,start_date:shift.startDate,end_date:newEndDate,'start_time (local)':shift.startTStr,'end_time (local)':newEndTime,shift_slots:'',_addedSec:Math.max(0,newEndNorm-shiftEndNorm)};
+    reqOutputRows.push(outRow);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="padding:9px 10px;border-bottom:1px solid var(--border)">${shift.shiftId}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">UPDATE</td><td style="padding:9px 10px;border-bottom:1px solid var(--border);font-weight:500">${riderId}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${shift.spId||shift.spName}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${shift.startDate}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${newEndDate}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${shift.startTStr}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border);color:var(--accent-text);font-weight:600">${newEndTime}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)"></td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('req-count').textContent=reqOutputRows.length+' صف';
+  document.getElementById('req-skip-count').textContent=skipped?skipped+' تم تجاهله':'';
+  document.getElementById('req-skip-count').style.display=skipped?'inline-block':'none';
+  document.getElementById('req-filtered-count').textContent=filteredOut?filteredOut+' منجز مسبقاً':'';
+  document.getElementById('req-filtered-count').style.display=filteredOut?'inline-block':'none';
+  const skTbody=document.getElementById('req-skipped-tbody');skTbody.innerHTML='';
+  if(skippedRows.length===0){skTbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--text-muted)">مفيش صفوف اتتجاهلت ✅</td></tr>';}
+  else{skippedRows.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML=`<td style="padding:9px 10px;border-bottom:1px solid var(--border);font-weight:500">${r.riderId}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${r.timeRaw}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border);color:var(--warn-text)">${r.reason}</td>`;skTbody.appendChild(tr);});}
+  const filtTbody=document.getElementById('req-filtered-tbody');filtTbody.innerHTML='';
+  if(filteredRows.length===0){filtTbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--text-muted)">مفيش منجز مسبقاً</td></tr>';}
+  else{filteredRows.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML=`<td style="padding:9px 10px;border-bottom:1px solid var(--border);font-weight:500">${r.riderId}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border)">${r.timeRaw}</td><td style="padding:9px 10px;border-bottom:1px solid var(--border);color:var(--success-text)">${r.status}</td>`;filtTbody.appendChild(tr);});}
+  document.getElementById('req-results').style.display='block';
+}
+function switchReqTab(t,btn){document.querySelectorAll('#req-results .tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('#req-results .tab-panel').forEach(p=>p.classList.remove('active'));document.getElementById('req-tab-'+t).classList.add('active');btn.classList.add('active');}
+function exportSkipped(){if(!_skippedRows.length)return;const hdrs=['rider_id','الوقت المطلوب','سبب التجاهل'];const data=[hdrs,..._skippedRows.map(r=>[r.riderId,r.timeRaw,r.reason])];const csv=data.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='skipped_'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
+function exportFiltered(){if(!_filteredRows.length)return;const hdrs=['rider_id','الوقت المطلوب','الحالة'];const data=[hdrs,..._filteredRows.map(r=>[r.riderId,r.timeRaw,r.status])];const csv=data.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='processed_'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
+function exportRequests(){if(!reqOutputRows.length)return;const hdrs=['shift_id','adjustment_type','employee_id','starting_point_id','start_date','end_date','start_time (local)','end_time (local)','shift_slots'];const data=[hdrs,...reqOutputRows.map(r=>hdrs.map(h=>r[h]??''))];const csv=data.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='extend_requests_'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
+
+// ── Username ──
+const USER_KEY='extShiftsUser';
+function getUsername(){return localStorage.getItem(USER_KEY)||'';}
+function saveUsername(){
+  const val=document.getElementById('username-input').value.trim();
+  if(!val){alert('لازم تكتب اسمك!');return;}
+  localStorage.setItem(USER_KEY,val);
+  document.getElementById('username-modal').style.display='none';
+}
+
+// ── Session Report ──
+function showSessionReport(){
+  const body=document.getElementById('session-report-body');
+  let html='<div class="rpt-section"><div class="rpt-section-title">⏩ Bulk Action — قبل وبعد per SP</div>';
+  if(results&&results.length){
+    const spData={};
+    results.forEach(r=>{const k=r.spName||r.spId||'غير محدد';if(!spData[k])spData[k]={beforeSecs:[],afterSecs:[],riders:0};spData[k].beforeSecs.push(r.total);spData[k].afterSecs.push(r.total+(r.addSec||0));spData[k].riders++;});
+    Object.entries(spData).forEach(([sp,d])=>{
+      const avgB=d.beforeSecs.reduce((a,b)=>a+b,0)/d.beforeSecs.length;
+      const avgA=d.afterSecs.reduce((a,b)=>a+b,0)/d.afterSecs.length;
+      html+=`<div class="rpt-sp-row"><span class="rpt-sp-name">${sp} (${d.riders} مندوب)</span><span class="rpt-sp-hours">${fmtH(avgB)} → ${fmtH(avgA)}</span></div>`;
+    });
+  } else {html+='<div class="rpt-empty">لسه ما اتشغلش Bulk Action</div>';}
+  html+='</div>';
+  if(scRows&&scRows.length){
+    html+='<div class="rpt-section"><div class="rpt-section-title">➕ Shift Creator</div>';
+    const spCreate={};scRows.forEach(r=>{const k=r.starting_point_id||'غير محدد';spCreate[k]=(spCreate[k]||0)+1;});
+    Object.entries(spCreate).forEach(([sp,cnt])=>html+=`<div class="rpt-sp-row"><span class="rpt-sp-name">${sp}</span><span class="rpt-sp-hours" style="color:var(--success-text)">${cnt} شيفت</span></div>`);
+    html+='</div>';
+  }
+  html+='<button class="rpt-export-btn" onclick="exportSessionReport()">⬇ تصدير الـ Report كـ CSV</button>';
+  body.innerHTML=html;document.getElementById('session-report-modal').style.display='flex';
+}
+function closeSessionReport(){document.getElementById('session-report-modal').style.display='none';}
+function exportSessionReport(){
+  const lines=['"قسم","تفصيلة","قيمة"'];
+  if(results&&results.length){const spData={};results.forEach(r=>{const k=r.spName||'غير محدد';if(!spData[k])spData[k]={beforeSecs:[],afterSecs:[]};spData[k].beforeSecs.push(r.total);spData[k].afterSecs.push(r.total+(r.addSec||0));});Object.entries(spData).forEach(([sp,d])=>{const avgB=d.beforeSecs.reduce((a,b)=>a+b,0)/d.beforeSecs.length;const avgA=d.afterSecs.reduce((a,b)=>a+b,0)/d.afterSecs.length;lines.push(['"Bulk Action"','"'+sp+'"','"'+fmtH(avgB)+' → '+fmtH(avgA)+'"'].join(','));});}
+  if(scRows&&scRows.length){const spCreate={};scRows.forEach(r=>{const k=r.starting_point_id||'غير محدد';spCreate[k]=(spCreate[k]||0)+1;});Object.entries(spCreate).forEach(([sp,cnt])=>lines.push(['"Shift Creator"','"'+sp+'"','"'+cnt+' شيفت"'].join(',')));}
+  const csv=lines.join('\n');const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='session_report_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+// ── Report Tab (local session only) ──
+function loadReport(){
+  document.getElementById('rpt-loading').style.display='none';
+  document.getElementById('rpt-empty').style.display='none';
+  document.getElementById('rpt-error').style.display='none';
+  document.getElementById('rpt-content').style.display='none';
+  const hasBulk=results&&results.length;const hasCreator=scRows&&scRows.length;const hasExtend=reqOutputRows&&reqOutputRows.length;
+  if(!hasBulk&&!hasCreator&&!hasExtend){document.getElementById('rpt-empty').style.display='block';return;}
+  document.getElementById('rpt-content').style.display='block';
+  let bHtml='<div class="rpt-empty">استخدم Bulk Action الأول</div>';
+  if(hasBulk){const spData={};results.forEach(r=>{const k=r.spName||'غير محدد';if(!spData[k])spData[k]={beforeSecs:[],afterSecs:[],riders:0};spData[k].beforeSecs.push(r.total);spData[k].afterSecs.push(r.total+(r.addSec||0));spData[k].riders++;});bHtml=Object.entries(spData).map(([sp,d])=>{const avgB=d.beforeSecs.reduce((a,b)=>a+b,0)/d.beforeSecs.length;const avgA=d.afterSecs.reduce((a,b)=>a+b,0)/d.afterSecs.length;return `<div style="display:grid;grid-template-columns:1fr auto auto auto auto;background:var(--bg);border-radius:var(--radius);margin-bottom:4px;align-items:center"><div style="padding:8px 10px;font-size:13px;font-weight:500">${sp}<span style="font-size:11px;color:var(--text-muted);margin-right:6px">(${d.riders})</span></div><div style="padding:8px 10px;font-size:13px;color:var(--warn-text);direction:ltr;min-width:72px">${fmtH(avgB)}</div><div style="padding:8px 10px;font-size:12px;color:var(--text-muted)">→</div><div style="padding:8px 10px;font-size:13px;color:var(--success-text);direction:ltr;min-width:72px">${fmtH(avgA)}</div><div style="padding:8px 10px;font-size:13px;font-weight:700;color:var(--accent-text);direction:ltr;min-width:72px">+${fmtH(avgA-avgB)}</div></div>`;}).join('');}
+  document.getElementById('rpt-bulk-content').innerHTML=bHtml;
+  let eHtml='<div class="rpt-empty">استخدم Extend Requests الأول</div>';
+  if(hasExtend){const spReq={};reqOutputRows.forEach(r=>{const k=r.starting_point_id||'غير محدد';if(!spReq[k])spReq[k]={count:0,addedSec:0};spReq[k].count++;spReq[k].addedSec+=(r._addedSec||0);});eHtml=Object.entries(spReq).map(([sp,d])=>`<div class="rpt-sp-row"><span class="rpt-sp-name">${sp}</span><span class="rpt-sp-hours">${d.count} طلب · +${fmtH(d.addedSec)}</span></div>`).join('');}
+  document.getElementById('rpt-extend-content').innerHTML=eHtml;
+  let cHtml='<div class="rpt-empty">استخدم Shift Creator الأول</div>';
+  if(hasCreator){const spCreate={};scRows.forEach(r=>{const k=r.starting_point_id||'غير محدد';spCreate[k]=(spCreate[k]||0)+1;});cHtml=Object.entries(spCreate).map(([sp,cnt])=>`<div class="rpt-sp-row"><span class="rpt-sp-name">${sp}</span><span class="rpt-sp-hours" style="color:var(--success-text)">${cnt} شيفت</span></div>`).join('');}
+  document.getElementById('rpt-creator-content').innerHTML=cHtml;
+  document.getElementById('rpt-status').textContent='آخر تحديث: '+new Date().toLocaleTimeString('en-GB');
+}
+function switchRptTab(name,btn){document.querySelectorAll('#rpt-tabs .tab').forEach(b=>b.classList.remove('active'));['bulk','extend','creator'].forEach(p=>{const el=document.getElementById('rpt-panel-'+p);if(el)el.classList.remove('active');});if(btn)btn.classList.add('active');const panel=document.getElementById('rpt-panel-'+name);if(panel)panel.classList.add('active');}
+
+// ── Ending Riders ──
+let eeRows=[],eeAllSPs=[],eeOutputRows=[],eeSelectedSPs=new Set();
+function eeToggleSPDrop(){const drop=document.getElementById('ee-sp-drop');const isOpen=drop.style.display!=='none';drop.style.display=isOpen?'none':'block';if(!isOpen)setTimeout(()=>document.getElementById('ee-sp-search').focus(),50);}
+document.addEventListener('click',e=>{const wrapper=document.getElementById('ee-sp-wrapper');const drop=document.getElementById('ee-sp-drop');if(!drop||!wrapper)return;if(!wrapper.contains(e.target))drop.style.display='none';});
+function eeRenderSPOptions(filter){
+  const opts=document.getElementById('ee-sp-options');const idToName=window._eeIdToName||{};
+  const filtered=eeAllSPs.filter(sp=>{const name=idToName[sp]||sp;return name.toLowerCase().includes(filter.toLowerCase())||sp.toLowerCase().includes(filter.toLowerCase());});
+  opts.innerHTML=filtered.map(sp=>{const name=idToName[sp]||sp;const checked=eeSelectedSPs.has(sp);return `<div onclick="eeToggleSP('${sp}')" style="display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:13px;border-radius:4px" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''"><span style="width:14px;height:14px;border:1.5px solid var(--border);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;background:${checked?'var(--accent)':'transparent'};border-color:${checked?'var(--accent)':'var(--border)'}">${checked?'<span style="color:#fff">✓</span>':''}</span>${name}</div>`;}).join('');
+}
+function eeToggleSP(sp){if(eeSelectedSPs.has(sp))eeSelectedSPs.delete(sp);else eeSelectedSPs.add(sp);eeRenderSPOptions(document.getElementById('ee-sp-search').value);eeUpdateSPTrigger();document.getElementById('ee-sp-drop').style.display='block';}
+function eeSelectAllSPs(selectAll){if(selectAll)eeAllSPs.forEach(sp=>eeSelectedSPs.add(sp));else eeSelectedSPs.clear();eeRenderSPOptions(document.getElementById('ee-sp-search').value);eeUpdateSPTrigger();}
+function eeFilterSPs(){eeRenderSPOptions(document.getElementById('ee-sp-search').value);}
+function eeUpdateSPTrigger(){
+  const label=document.getElementById('ee-sp-label');const tags=document.getElementById('ee-sp-tags');const idToName=window._eeIdToName||{};const count=eeSelectedSPs.size;
+  if(count===0){label.textContent='اختار النقاط';tags.innerHTML='';}
+  else if(count===eeAllSPs.length){label.textContent='كل النقاط ('+count+')';tags.innerHTML='';}
+  else{label.textContent=count+' نقطة مختارة';tags.innerHTML=[...eeSelectedSPs].map(sp=>{const name=idToName[sp]||sp;return `<span style="background:var(--accent-bg);color:var(--accent-text);border:1px solid var(--accent-border);border-radius:20px;padding:2px 10px;font-size:11px;display:flex;align-items:center;gap:4px">${name} <span onclick="eeToggleSP('${sp}')" style="cursor:pointer;font-size:10px">✕</span></span>`;}).join('');}
+}
+function eeLoadFile(file){
+  if(!file)return;const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      if(!data.length){alert('الملف فاضي');return;}
+      eeRows=data;const cols=Object.keys(data[0]);
+      const spIdCol=cols.find(c=>/starting.?point.?id/i.test(c));
+      const spNameCol=cols.find(c=>/starting.?point/i.test(c)&&c!==spIdCol);
+      const spSet=new Set();const idToName={};
+      data.forEach(r=>{const sp=String(r[spIdCol]||'').trim();if(!sp)return;spSet.add(sp);const name=String(r[spNameCol]||'').trim();if(name)idToName[sp]=name;});
+      window._eeIdToName=idToName;window._eeSpIdCol=spIdCol;window._eeSpNameCol=spNameCol;window._eeCols=cols;
+      eeAllSPs=[...spSet].sort((a,b)=>(idToName[a]||a).localeCompare(idToName[b]||b));
+      eeSelectedSPs=new Set(eeAllSPs);eeRenderSPOptions('');eeUpdateSPTrigger();
+      document.getElementById('ee-drop-label').textContent='✅ '+file.name+' — '+data.length+' شيفت';
+      document.getElementById('ee-drop').className='drop-zone loaded';
+      document.getElementById('ee-settings').style.display='block';
+      document.getElementById('ee-results').style.display='none';
+      document.getElementById('ee-err').style.display='none';
+    }catch(err){alert('خطأ: '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+function eeShowErr(msg){const el=document.getElementById('ee-err');el.textContent=msg;el.style.display=msg?'block':'none';}
+function eeRun(){
+  eeShowErr('');if(!eeRows.length){eeShowErr('ارفع الملف الأول');return;}if(!eeSelectedSPs.size){eeShowErr('اختار نقطة واحدة على الأقل');return;}
+  const fromT=document.getElementById('ee-from').value.trim();const toT=document.getElementById('ee-to').value.trim();
+  const timeRx=/^([01]?\d|2[0-3]):([0-5]\d)$/;
+  if(!fromT||!toT){eeShowErr('حدد نافذة الوقت');return;}
+  if(!timeRx.test(fromT)){eeShowErr('وقت البداية غلط — مثال: 09:00');return;}
+  if(!timeRx.test(toT)){eeShowErr('وقت النهاية غلط — مثال: 23:30');return;}
+  const fromSec=parseSec(fromT+':00');const toSec=parseSec(toT+':00');
+  const addHours=parseInt(document.getElementById('ee-hours').value)||0;const addMins=parseInt(document.getElementById('ee-mins').value)||0;const addSec=addHours*3600+addMins*60;
+  if(addSec<=0){eeShowErr('حدد مدة الزيادة');return;}
+  const cols=window._eeCols||Object.keys(eeRows[0]||{});const norm=s=>s.toLowerCase().replace(/[\s_\-()]/g,'');
+  const spIdCol=window._eeSpIdCol||cols.find(c=>/starting.?point.?id/i.test(c));
+  const spNameCol=window._eeSpNameCol||cols.find(c=>/starting.?point/i.test(c)&&c!==spIdCol);
+  const idCol=cols.find(c=>norm(c)==='employeeid');const shiftCol=cols.find(c=>norm(c)==='shiftid');
+  const sDCol=cols.find(c=>norm(c)==='plannedstartdate');const eDCol=cols.find(c=>norm(c)==='plannedenddate');
+  const sTCol=cols.find(c=>norm(c)==='plannedstarttime');const eTCol=cols.find(c=>norm(c)==='plannedendtime');
+  const idToName=window._eeIdToName||{};
+  const maxDurInput=parseFloat(document.getElementById('ee-max-dur')?.value);const maxDurSec=isNaN(maxDurInput)?null:maxDurInput*3600;
+  const durCol=cols.find(c=>norm(c).includes('duration'));
+  eeOutputRows=[];const seenShiftIds=new Set();const tbody=document.getElementById('ee-tbody');tbody.innerHTML='';
+  eeRows.forEach(r=>{
+    const sp=String(r[spIdCol]||'').trim();if(!eeSelectedSPs.has(sp))return;
+    const empId=String(r[idCol]||'').trim();const shiftId=String(r[shiftCol]||'').trim();
+    if(shiftId&&seenShiftIds.has(shiftId))return;if(shiftId)seenShiftIds.add(shiftId);
+    const startDate=fmtDate(r[sDCol]);const endDate=fmtDate(r[eDCol]);
+    const startTSec=parseSec(r[sTCol]);const endTSec=parseSec(r[eTCol]);
+    if(endTSec===null||startTSec===null)return;
+    if(maxDurSec!==null&&durCol){const dur=parseSec(r[durCol]);if(dur!==null&&dur>=maxDurSec)return;}
+    const startTStr=toHHMM(startTSec);const endNorm=((endTSec%86400)+86400)%86400;const isOvernight=endNorm<(startTSec%86400);
+    let inWindow=false;
+    if(fromSec<=toSec){inWindow=endNorm>=fromSec&&endNorm<=toSec;}else{inWindow=endNorm>=fromSec||endNorm<=toSec;}
+    if(!inWindow)return;
+    const newEndSec=endNorm+addSec;const newEndNorm=newEndSec%86400;const daysCrossed=Math.floor(newEndSec/86400)+(isOvernight?1:0);
+    let newEndDate=endDate||startDate;
+    if(daysCrossed>0&&newEndDate){const base=new Date(newEndDate+'T00:00:00Z');if(!isNaN(base)){base.setUTCDate(base.getUTCDate()+daysCrossed);newEndDate=base.toISOString().slice(0,10);}}
+    const finalEndStr=toHHMM(newEndNorm);
+    eeOutputRows.push({shift_id:shiftId,adjustment_type:'UPDATE',employee_id:empId,starting_point_id:sp,start_date:startDate,end_date:newEndDate,'start_time (local)':startTStr,'end_time (local)':finalEndStr,shift_slots:''});
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="padding:7px 10px;border-bottom:1px solid var(--border)">${shiftId}</td><td style="padding:7px 10px;border-bottom:1px solid var(--border)">UPDATE</td><td style="padding:7px 10px;border-bottom:1px solid var(--border)">${empId}</td><td style="padding:7px 10px;border-bottom:1px solid var(--border)">${sp}</td><td style="padding:7px 10px;border-bottom:1px solid var(--border)">${startDate}</td><td style="padding:7px 10px;border-bottom:1px solid var(--border)">${newEndDate}</td><td style="padding:7px 10px;border-bottom:1px solid var(--border)">${startTStr}</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--success-text);font-weight:600">${finalEndStr}</td><td style="padding:7px 10px;border-bottom:1px solid var(--border)"></td>`;
+    tbody.appendChild(tr);
+  });
+  if(!eeOutputRows.length){eeShowErr('مفيش شيفتات بتقفل في النافذة دي للنقاط المختارة');return;}
+  document.getElementById('ee-count-badge').textContent=eeOutputRows.length+' شيفت';
+  document.getElementById('ee-results').style.display='block';
+}
+function eeExport(){
+  if(!eeOutputRows.length)return;
+  const hdrs=['shift_id','adjustment_type','employee_id','starting_point_id','start_date','end_date','start_time (local)','end_time (local)','shift_slots'];
+  const data=[hdrs,...eeOutputRows.map(r=>hdrs.map(h=>r[h]??''))];
+  const csv=data.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ending_riders_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+</script>
+</body>
+</html>
