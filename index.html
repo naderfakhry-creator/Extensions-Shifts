@@ -1196,7 +1196,24 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!getUsername())document.getElementById('username-modal').style.display='flex';
 });
 function parseArabicTime(text){
-  if(!text)return null;text=String(text).trim();
+  if(text===null||text===undefined)return null;
+  if(typeof text==='number'){
+    const totalSec=Math.round(text*86400);
+    const h=Math.floor(totalSec/3600)%24;
+    const m=Math.floor((totalSec%3600)/60);
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  }
+  text=String(text).trim();if(!text)return null;
+  const enMatch=text.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)/i);
+  if(enMatch){
+    let h=parseInt(enMatch[1]),m=parseInt(enMatch[2]);
+    const period=enMatch[3].toUpperCase();
+    if(period==='PM'&&h!==12)h+=12;
+    if(period==='AM'&&h===12)h=0;
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  }
+  const match24=text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if(match24){const h=parseInt(match24[1]),m=parseInt(match24[2]);if(h>=0&&h<24&&m>=0&&m<60)return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
   const match=text.match(/(\d{1,2}):(\d{2})/);if(!match)return null;
   let h=parseInt(match[1]),m=parseInt(match[2]);
   const isAM=/صباح|الصبح|فجر|الفجر/.test(text);
@@ -1240,7 +1257,7 @@ function runExtendRequests(){
       empShiftMap[empId]={shiftId:String(row[sIdCol]||'').trim(),spId:String(row[sSPCol]||'').trim(),startDate,endDate,startT,endT,absEnd,startTStr:toHHMM2(startT),endTStr:toHHMM2(endT)};
     }
   }
-  const timeCol=4,idCol=6,statusCol=8;
+  const timeCol=5,idCol=6,statusCol=8;
   const tbody=document.getElementById('req-tbody');tbody.innerHTML='';
   reqOutputRows=[];_skippedRows=[];_filteredRows=[];
   const skippedRows=_skippedRows,filteredRows=_filteredRows;
@@ -1250,8 +1267,7 @@ function runExtendRequests(){
     if(statusCol>=0){
       const status=String(row[statusCol]||'').trim();
       const normStatus=status.replace(/[إأآا]/g,'ا');
-      const isPending=normStatus==='قيد الانتظار'||normStatus===''||!status;
-      if(!isPending){filteredOut++;filteredRows.push({riderId:String(row[idCol]||'').trim(),timeRaw:String(row[timeCol]||'').trim(),status});continue;}
+      if(status&&normStatus!=='قيد الانتظار'){filteredOut++;filteredRows.push({riderId:String(row[idCol]||'').trim(),timeRaw:String(row[timeCol]||'').trim(),status});continue;}
     }
     const timeRaw=String(row[timeCol]||'').trim();const riderId=String(row[idCol]||'').trim();if(!riderId)continue;
     const newEndTime=parseArabicTime(timeRaw);
